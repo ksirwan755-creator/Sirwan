@@ -179,14 +179,69 @@ function LocaleSwitch({ locale, onLocale }: { locale: Locale; onLocale: (locale:
 
 function SetupNotice({ locale, onLocale }: { locale: Locale; onLocale: (locale: Locale) => void }) {
   const t = copy[locale];
+  const isKu = locale === 'ku';
+  const requiredVariables = isKu
+    ? [
+        ['VITE_FIREBASE_API_KEY', 'لە Firebase Console → Project settings → General → Your apps → Web app، بەهای apiKey.'],
+        ['VITE_FIREBASE_AUTH_DOMAIN', 'لە هەمان شوێن، بەهای authDomain.'],
+        ['VITE_FIREBASE_PROJECT_ID', 'لە هەمان شوێن، بەهای projectId.'],
+        ['VITE_FIREBASE_APP_ID', 'لە هەمان شوێن، بەهای appId.'],
+        ['VITE_CAFE_OWNER_UID', 'لە Firebase Console → Authentication → Users، UIDی هەژماری خاوەن.'],
+      ]
+    : [
+        ['VITE_FIREBASE_API_KEY', 'من Firebase Console → Project settings → General → Your apps → Web app، قيمة apiKey.'],
+        ['VITE_FIREBASE_AUTH_DOMAIN', 'من المكان نفسه، قيمة authDomain.'],
+        ['VITE_FIREBASE_PROJECT_ID', 'من المكان نفسه، قيمة projectId.'],
+        ['VITE_FIREBASE_APP_ID', 'من المكان نفسه، قيمة appId.'],
+        ['VITE_CAFE_OWNER_UID', 'من Firebase Console → Authentication → Users، معرّف UID لحساب المالك.'],
+      ];
+  const optionalVariables = isKu
+    ? [
+        ['VITE_FIREBASE_STORAGE_BUCKET', 'storageBucket ـە؛ ئەگەر لە Web app config ـەکەدا هەبوو.'],
+        ['VITE_FIREBASE_MESSAGING_SENDER_ID', 'messagingSenderId ـە؛ ئەگەر لە Web app config ـەکەدا هەبوو.'],
+        ['VITE_FIREBASE_MEASUREMENT_ID', 'measurementId ـە؛ تەنها بۆ Analytics، پێویست نییە.'],
+      ]
+    : [
+        ['VITE_FIREBASE_STORAGE_BUCKET', 'القيمة storageBucket، إذا ظهرت في إعدادات تطبيق الويب.'],
+        ['VITE_FIREBASE_MESSAGING_SENDER_ID', 'القيمة messagingSenderId، إذا ظهرت في إعدادات تطبيق الويب.'],
+        ['VITE_FIREBASE_MEASUREMENT_ID', 'القيمة measurementId، للتحليلات فقط وليست مطلوبة.'],
+      ];
   return <main className="gate-shell" dir="rtl">
     <div className="gate-top"><Brand locale={locale} /><LocaleSwitch locale={locale} onLocale={onLocale} /></div>
     <section className="gate-card setup-card" data-testid="status-firebase-not-configured">
       <span className="gate-icon"><CircleAlert size={23} /></span>
       <p className="eyebrow">QUBA · {t.ownerDesk}</p>
       <h1>{t.firebaseMissing}</h1>
-      <p className="gate-copy">{t.firebaseExplain}</p>
-      <div className="setup-foot"><span className="status-dot" /> {locale === 'ku' ? 'پێویستی بە بەستەری Firebase هەیە' : 'يتطلب الاتصال بـ Firebase'}</div>
+      <p className="gate-copy">{isKu
+        ? 'پشکنین کردم: ئەم خانانە لە Replit ڕێک نەخراون. ٥ خانە پێویستن بۆ چوونەژوورەوە و داتاکان؛ بەهاکان لە Firebase Web app و UIDی خاوەن وەربگرە.'
+        : 'تحققت من الإعدادات: هذه الحقول غير مضبوطة في Replit. الحقول الخمسة أدناه مطلوبة للدخول والبيانات؛ خذ القيم من إعدادات تطبيق Firebase ومعرّف المالك.'}</p>
+      <h2>{isKu ? 'خانە پێویستەکان' : 'الحقول المطلوبة'}</h2>
+      <ul className="setup-vars">
+        {requiredVariables.map(([name, source]) => <li key={name}>
+          <code dir="ltr">{name}</code><span>{source}</span>
+        </li>)}
+      </ul>
+      <h2>{isKu ? 'خانەی هەڵبژاردەیی' : 'حقول اختيارية'}</h2>
+      <ul className="setup-vars setup-vars-optional">
+        {optionalVariables.map(([name, source]) => <li key={name}>
+          <code dir="ltr">{name}</code><span>{source}</span>
+        </li>)}
+      </ul>
+      <section className="setup-instructions">
+        <h2>{isKu ? 'لە مۆبایل لە Replit زیادکردن' : 'إضافتها من الهاتف في Replit'}</h2>
+        <ol>
+          <li>{isKu ? 'پڕۆژەکە بکەرەوە؛ ☰ → Tools → Secrets → + New Secret.' : 'افتح المشروع؛ ☰ ← Tools ← Secrets ← + New Secret.'}</li>
+          <li>{isKu ? 'ناوی خانەکە لێرە کۆپی بکە؛ بەهای Firebase لە خانەی Value دابنێ و پاشەکەوتی بکە. بۆ هەر خانەی پێویست دووبارەی بکەوە.' : 'انسخ اسم الحقل من هنا، وضع قيمة Firebase في Value ثم احفظ. كرر ذلك لكل حقل مطلوب.'}</li>
+          <li>{isKu ? 'پاشان workflow ـی web لە Replit Restart بکە. وشەی نهێنی یان service-account key بەکارمەهێنە.' : 'بعدها أعد تشغيل web workflow في Replit. لا تستخدم كلمة مرور أو service-account key.'}</li>
+        </ol>
+      </section>
+      <section className="setup-rules">
+        <h2>{isKu ? 'بڵاوکردنەوەی ڕێساکانی Firestore' : 'نشر قواعد Firestore'}</h2>
+        <p>{isKu
+          ? 'لە Firebase Console → Firestore Database → Rules، یاساکانی ئێستا بخوێنەوە. ئەگەر پڕۆژەکە بۆ ئەپەکانی دیکەشە، هەموو یاساکان مەگۆڕە؛ ڕێساکانی QUBA بە پاراستنی یاساکانی تر تێکەڵ بکە، هیچ allow ـێکی فراوان نابێت ڕێگەی بێ‌مەرج بدات. تەنها دوای پشکنین Publish بکە.'
+          : 'في Firebase Console ← Firestore Database ← Rules، راجع القواعد الحالية. إذا كان المشروع يستخدمه تطبيق آخر، لا تستبدل كل القواعد؛ ادمج قواعد QUBA مع الحفاظ على الباقي، وتأكد من عدم وجود قاعدة allow واسعة. انشر بعد المراجعة فقط.'}</p>
+      </section>
+      <div className="setup-foot"><span className="status-dot" /> {isKu ? 'هیچ داتای نموونەیی نییە؛ چوونەژوورەوە تەنها بۆ خاوەنە.' : 'لا توجد بيانات تجريبية؛ الدخول للمالك فقط.'}</div>
     </section>
   </main>;
 }

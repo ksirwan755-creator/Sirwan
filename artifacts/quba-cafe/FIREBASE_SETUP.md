@@ -7,10 +7,18 @@ service-account key in the app.
 
 ## Configure the app
 
-Add the values from the Firebase project's Web app configuration as environment
-variables using the names in `.env.example`. Add the owner's Firebase
-Authentication UID as `VITE_CAFE_OWNER_UID`. These values are read by Vite at
-startup/build time. Restart the app after changing them.
+The required Replit variables are `VITE_FIREBASE_API_KEY`,
+`VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`,
+and `VITE_CAFE_OWNER_UID`. The first four come from Firebase Console → Project
+settings → General → Your apps → the Web app configuration. The owner UID comes
+from Firebase Console → Authentication → Users. `VITE_FIREBASE_STORAGE_BUCKET`,
+`VITE_FIREBASE_MESSAGING_SENDER_ID`, and `VITE_FIREBASE_MEASUREMENT_ID` are
+optional.
+
+On a phone, open the Replit project, tap ☰ → Tools → Secrets → + New Secret.
+Enter each exact variable name and its value, then save. Restart the web
+workflow after changing the values. Firebase web-app settings are client
+configuration; never use a service-account key or share an account password.
 
 The owner must already have an account in Firebase Authentication. Enable the
 Email/Password sign-in provider in the Firebase project. The app has no

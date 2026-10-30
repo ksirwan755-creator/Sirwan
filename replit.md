@@ -1,44 +1,59 @@
-# [Project name]
+# QUBA CAFE & RESTAURANT
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Owner-only cafe management in Sorani Kurdish and Arabic, backed by Firebase Authentication and Cloud Firestore.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/quba-cafe run dev` — run the QUBA web app
+- `pnpm --filter @workspace/quba-cafe run typecheck` — typecheck the QUBA web app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- QUBA Firebase setup: see `artifacts/quba-cafe/FIREBASE_SETUP.md` and `.env.example`
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- API: Express 5 (shared workspace service; QUBA data uses Firebase directly)
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
+- QUBA web: React + Vite + Firebase Auth/Firestore client SDK
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/quba-cafe/src/App.tsx` — owner dashboard and management screens
+- `artifacts/quba-cafe/src/lib/firebase.ts` — Firebase client configuration and owner sign-in
+- `artifacts/quba-cafe/src/lib/cafe-data.ts` — live Firestore subscriptions and mutations
+- `artifacts/quba-cafe/src/lib/types.ts` — cafe record contracts
+- `artifacts/quba-cafe/firestore.rules` — owner-scoped Firestore security rules
+- `artifacts/quba-cafe/FIREBASE_SETUP.md` — Firebase configuration and rules deployment steps
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Sorani is the default locale; Arabic is available as a second RTL locale.
+- Firebase Auth has no sign-up path. The configured owner UID is checked by the app, and Firestore paths are scoped by UID.
+- QUBA must not use sample records or Firebase test-mode/public rules.
+- Order item names and unit prices are stored on each order line so later menu edits do not rewrite order history.
+- Payments are recorded as separate entries on the order; paid orders are not deleted or cancelled.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The owner can manage the menu, categories, tables, orders and payments, expenses, customers, date-filtered reports, and restaurant settings. The app uses IQD and supports phone-sized screens.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Do not use fake data or weaken Firebase security rules.
+- Do not request the owner's password or a Firebase service-account key.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Firebase web app values and the owner UID are read from the variables listed in `artifacts/quba-cafe/.env.example`; restart the web workflow after changing them.
+- `artifacts/quba-cafe/firestore.rules` must be published in the owner's Firebase console. Rules are not deployed automatically by this app.
 
 ## Pointers
 

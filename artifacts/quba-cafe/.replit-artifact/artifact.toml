@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "QUBA CAFE & RESTAURANT"
+description = "A mobile-first cafe and restaurant management website in Kurdish Sorani and Arabic. The owner can manage products, categories, tables, orders, payments, expenses, customers, reports, and settings using Firebase with IQD currency."
+version = "1.0.0"
+id = "artifacts/quba-cafe"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24477
+
+[services.development]
+run = "pnpm --filter @workspace/quba-cafe run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/quba-cafe", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/quba-cafe/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24477"
+BASE_PATH = "/"

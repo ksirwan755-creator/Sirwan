@@ -19,11 +19,18 @@ from `VITE_CAFE_OWNER_UID`.
 
 ## Apply Firestore rules
 
-In the Firebase console, open Firestore Database → Rules, replace the existing
-rules with the contents of `firestore.rules`, and publish. The rules allow
-authenticated access only to `/owners/{uid}/...` when the signed-in UID equals
-that path UID; all other document paths are denied. The app stores QUBA data
-under `/owners/{VITE_CAFE_OWNER_UID}/...`.
+In the Firebase console, open Firestore Database → Rules and review the
+project's current rules first. If this Firebase project is dedicated to QUBA,
+you can replace its rules with the contents of `firestore.rules` and publish.
+If other apps or data use this project, do not replace the whole ruleset:
+carefully merge the QUBA owner-scoped matches while preserving those other
+rules. Firestore combines matching `allow` rules, so an existing broad or
+public rule can still grant access; make sure no permissive rule covers the
+QUBA owner paths.
+
+The QUBA rules allow authenticated access only to `/owners/{uid}/...` when the
+signed-in UID equals that path UID; all other document paths are denied by this
+ruleset. The app stores QUBA data under `/owners/{VITE_CAFE_OWNER_UID}/...`.
 
 Do not replace these rules with test mode or public access. The rules are not
 deployed automatically from this project, so the Firebase console must show the

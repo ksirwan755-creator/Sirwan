@@ -31,7 +31,7 @@ const copy = {
     startOrder: 'داواکارییەکان لێرە دەردەکەون کاتێک تۆمار کران.',
     emptyTitle: 'هێشتا هیچ تۆمارێک نییە', emptyText: 'کاتێک تۆمارێک زیاد بکەیت، لێرە دەردەکەوێت.',
     add: 'زیادکردن', addItem: 'زیادکردنی بەرهەم', search: 'گەڕان', name: 'ناو', nameKu: 'ناو بە کوردی', nameAr: 'ناو بە عەرەبی',
-    price: 'نرخ (دینار)', category: 'جۆر', seats: 'ژمارەی کورسی', label: 'ژمارە / ناونیشانی مێز',
+    price: 'نرخ (دینار)', category: 'جۆر', foodCategory: 'خواردن', beverageCategory: 'خواردنەوە', seats: 'ژمارەی کورسی', label: 'ژمارە / ناونیشانی مێز',
     phone: 'ژمارەی تەلەفۆن', notes: 'تێبینی', titleKu: 'ناونیشان بە کوردی', titleAr: 'ناونیشان بە عەرەبی',
     expenseCategory: 'جۆری خەرجی', amount: 'بڕ (دینار)', date: 'بەروار', active: 'چالاک',
     actions: 'کردار', save: 'پاشەکەوتکردن', cancel: 'پاشگەزبوونەوە', edit: 'دەستکاریکردن',
@@ -68,7 +68,7 @@ const copy = {
     startOrder: 'ستظهر الطلبات هنا عند تسجيلها.',
     emptyTitle: 'لا توجد سجلات بعد', emptyText: 'ستظهر السجلات هنا بعد إضافتها.',
     add: 'إضافة', addItem: 'إضافة عنصر للقائمة', search: 'بحث', name: 'الاسم', nameKu: 'الاسم بالكردية', nameAr: 'الاسم بالعربية',
-    price: 'السعر (دينار)', category: 'الفئة', seats: 'عدد المقاعد', label: 'رقم / اسم الطاولة',
+    price: 'السعر (دينار)', category: 'الفئة', foodCategory: 'طعام', beverageCategory: 'مشروبات', seats: 'عدد المقاعد', label: 'رقم / اسم الطاولة',
     phone: 'رقم الهاتف', notes: 'ملاحظات', titleKu: 'العنوان بالكردية', titleAr: 'العنوان بالعربية',
     expenseCategory: 'فئة المصروف', amount: 'المبلغ (دينار)', date: 'التاريخ', active: 'نشط',
     actions: 'الإجراءات', save: 'حفظ', cancel: 'إلغاء', edit: 'تعديل', delete: 'حذف',
@@ -473,6 +473,16 @@ const schemas: Record<RecordKind, string[]> = {
   customers: ['name', 'phone', 'notes'],
   expenses: ['titleKu', 'titleAr', 'category', 'amountIqd', 'date', 'notes'],
 };
+const PRODUCT_CATEGORY_PRESETS = [
+  { id: '__quba_food__', labelKey: 'foodCategory' },
+  { id: '__quba_beverage__', labelKey: 'beverageCategory' },
+] as const;
+
+function productCategoryLabel(categoryId: string | null | undefined, categories: AnyRecord[], locale: Locale, t: any) {
+  const preset = PRODUCT_CATEGORY_PRESETS.find((item) => item.id === categoryId);
+  if (preset) return t[preset.labelKey];
+  return localized(categories.find((category) => category.id === categoryId), locale) || t.noCategory;
+}
 
 function DataPage({ kind, records, categories, locale, t, actions, notify }: { kind: RecordKind; records: AnyRecord[]; categories?: AnyRecord[]; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
   const [search, setSearch] = useState('');
@@ -504,7 +514,7 @@ function DataPage({ kind, records, categories, locale, t, actions, notify }: { k
     <div className="list-toolbar"><label className="search-box"><Search size={17} /><input data-testid={`input-search-${kind}`} placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} /></label><button type="button" className="button button-primary" onClick={() => setFormRecord({})} data-testid={`button-add-${kind}`}><Plus size={17} />{kind === 'products' ? t.addItem : t.add}</button></div>
     {filtered.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : undefined} /> : <div className="data-table-wrap"><table className="data-table"><thead><tr>{fields.map((field) => <th key={field}>{fieldText(field, t)}</th>)}<th>{t.actions}</th></tr></thead><tbody>
       {filtered.map((record) => <tr key={record.id} data-testid={`row-${kind}-${record.id}`}>
-        {fields.map((field) => <td key={field}>{field === 'active' ? <span className={`status-badge ${record.active === false ? 'badge-cancelled' : 'badge-paid'}`}>{record.active === false ? t.inactive : t.active}</span> : field === 'categoryId' ? (localized(categories?.find((x) => x.id === record.categoryId), locale) || t.noCategory) : field === 'priceIqd' || field === 'amountIqd' ? formatIQD(Number(record[field]), locale) : field === 'date' ? dateText(record[field], locale) : <span className={field === 'notes' ? 'muted-cell' : ''}>{(field === 'nameKu' && (kind === 'products' || kind === 'categories')) || (field === 'titleKu' && kind === 'expenses') ? localized(record, locale, field === 'titleKu' ? 'title' : 'name') : record[field] || '—'}</span>}</td>)}
+        {fields.map((field) => <td key={field}>{field === 'active' ? <span className={`status-badge ${record.active === false ? 'badge-cancelled' : 'badge-paid'}`}>{record.active === false ? t.inactive : t.active}</span> : field === 'categoryId' ? productCategoryLabel(record.categoryId, categories || [], locale, t) : field === 'priceIqd' || field === 'amountIqd' ? formatIQD(Number(record[field]), locale) : field === 'date' ? dateText(record[field], locale) : <span className={field === 'notes' ? 'muted-cell' : ''}>{(field === 'nameKu' && (kind === 'products' || kind === 'categories')) || (field === 'titleKu' && kind === 'expenses') ? localized(record, locale, field === 'titleKu' ? 'title' : 'name') : record[field] || '—'}</span>}</td>)}
         <td><div className="row-actions"><button className="icon-button" type="button" title={t.edit} aria-label={t.edit} onClick={() => setFormRecord(record)} data-testid={`button-edit-${kind}-${record.id}`}><Pencil size={15} /></button><button className="icon-button danger-icon" type="button" title={t.delete} aria-label={t.delete} onClick={() => setDeleting(record)} data-testid={`button-delete-${kind}-${record.id}`}><Trash2 size={15} /></button></div></td>
       </tr>)}
     </tbody></table></div>}
@@ -528,7 +538,7 @@ function RecordDialog({ kind, record, categories, locale, t, busy, onClose, onSa
   }
   return <Modal title={title} onClose={onClose}><form onSubmit={submit} className="dialog-form">
     <div className="form-grid">{fields.map((field) => <label key={field} className={`form-field ${field === 'notes' ? 'field-wide' : ''}`}><span>{fieldText(field, t)}</span>
-      {field === 'categoryId' ? <select required value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })}><option value="">{t.category}</option>{categories.map((category) => <option value={category.id} key={category.id}>{localized(category, locale)}</option>)}</select>
+      {field === 'categoryId' ? <select required value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })}><option value="">{t.category}</option>{PRODUCT_CATEGORY_PRESETS.map((category) => <option value={category.id} key={category.id}>{t[category.labelKey]}</option>)}{categories.map((category) => <option value={category.id} key={category.id}>{localized(category, locale)}</option>)}</select>
         : field === 'active' ? <span className="check-line"><input type="checkbox" checked={values.active !== false} onChange={(e) => setValues({ ...values, active: e.target.checked })} />{t.active}</span>
           : field === 'notes' ? <textarea value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })} rows={3} />
              : <input required={['name', 'nameKu', 'nameAr', 'titleKu', 'titleAr', 'priceIqd', 'label', 'seats', 'amountIqd'].includes(field)} type={field === 'priceIqd' || field === 'amountIqd' || field === 'seats' || field === 'sortOrder' ? 'number' : field === 'date' ? 'date' : field === 'phone' ? 'tel' : 'text'} min={field === 'seats' ? 1 : field === 'priceIqd' || field === 'amountIqd' || field === 'sortOrder' ? 0 : undefined} step="1" value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })} />}

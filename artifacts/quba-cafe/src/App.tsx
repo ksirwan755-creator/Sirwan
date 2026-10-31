@@ -443,41 +443,62 @@ function EmptyState({ locale, title, detail }: { locale: Locale; title?: string;
 function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {
   const today = todayKey();
   const activeOrders = data.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(o.status)));
-  const todaysOrders = data.orders.filter((o: AnyRecord) => todayKey(asDate(o.createdAt)) === today && !['cancelled'].includes(normalizeOrderStatus(o.status)));
+  const todaysOrders = data.orders.filter((o: AnyRecord) => todayKey(asDate(o.createdAt)) === today && normalizeOrderStatus(o.status) !== 'cancelled');
   const todaysExpenses = data.expenses.filter((e: AnyRecord) => String(e.date || '').slice(0, 10) === today);
-  const salesToday = data.orders.filter((o: AnyRecord) => normalizeOrderStatus(o.status) !== 'cancelled').reduce((sum: number, o: AnyRecord) => sum + (o.payments || []).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0), 0);
+  const salesToday = todaysOrders.reduce((sum: number, o: AnyRecord) => sum + (o.payments || []).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0), 0);
   const expenseTotal = todaysExpenses.reduce((sum: number, e: AnyRecord) => sum + Number(e.amountIqd || 0), 0);
-  const occupiedTables = data.tables.filter((table: AnyRecord) => getTableState(table) === 'occupied' || getTableState(table) === 'reserved').length;
+  const occupiedTables = data.tables.filter((table: AnyRecord) => ['occupied', 'reserved'].includes(getTableState(table))).length;
+  const availableTables = data.tables.filter((table: AnyRecord) => getTableState(table) === 'available').length;
   const totalTables = data.tables.filter((x: AnyRecord) => x.active !== false).length;
   const todayLabel = new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const hour = new Date().getHours();
-  return <div className="dashboard-content">
-    <div className="welcome-row"><div><p>{todayLabel}</p><h2>{hour < 17 ? t.goodMorning : t.goodEvening}, <span>{localized(data.settings, locale, 'restaurantName') || t.owner}</span></h2></div></div>
-    <section className="metric-grid">
+  const popular: Record<string, number> = {};
+  todaysOrders.forEach((order: AnyRecord) => (order.items || []).forEach((item: AnyRecord) => {
+    const name = localized(item, locale) || item.nameKu || item.nameAr || t.items;
+    popular[name] = (popular[name] || 0) + Number(item.quantity || 0);
+  }));
+  const topProduct = Object.entries(popular).sort((a, b) => b[1] - a[1])[0];
+  const isKu = locale === 'ku';
+  return <div className="dashboard-content dashboard-redesign">
+    <section className="dashboard-hero">
+      <div className="dashboard-hero-copy">
+        <span className="dashboard-live"><i />{isKu ? 'بەخێربێیت بۆ بەڕێوەبردنی قوبە' : 'مرحباً بك في إدارة قوبا'}</span>
+        <p>{todayLabel}</p>
+        <h2>{hour < 17 ? t.goodMorning : t.goodEvening}، <strong>{localized(data.settings, locale, 'restaurantName') || 'QUBA'}</strong></h2>
+        <small>{isKu ? 'هەموو ڕۆژەکەت لە یەک شوێنەوە بەڕێوەببە.' : 'تابع تفاصيل يومك وأدر المقهى من مكان واحد.'}</small>
+      </div>
+      <div className="dashboard-hero-mark"><Coffee size={38} strokeWidth={1.35} /><b>QUBA</b><span>CAFE & RESTAURANT</span></div>
+    </section>
+
+    <section className="dashboard-quick-actions" aria-label={isKu ? 'کردارە خێراکان' : 'إجراءات سريعة'}>
+      <Link href="/orders" className="quick-action quick-action-primary"><span><Plus size={20} /></span><b>{isKu ? 'داواکارییەکی نوێ' : 'طلب جديد'}</b><small>{isKu ? 'تۆمارکردنی داواکاری' : 'إضافة طلب للزبون'}</small></Link>
+      <Link href="/tables" className="quick-action"><span><Utensils size={20} /></span><b>{isKu ? 'مێزەکان' : 'الطاولات'}</b><small>{isKu ? 'بینینی دۆخی مێز' : 'عرض حالة الطاولات'}</small></Link>
+      <Link href="/expenses" className="quick-action"><span><Wallet size={20} /></span><b>{isKu ? 'زیادکردنی خەرجی' : 'إضافة مصروف'}</b><small>{isKu ? 'تۆمارکردنی خەرجی' : 'تسجيل مصروف اليوم'}</small></Link>
+    </section>
+
+    <div className="dashboard-section-title"><div><span>{isKu ? 'پوختەی کار' : 'نظرة عامة'}</span><h3>{isKu ? 'بارودۆخی ئەمڕۆ' : 'ملخص اليوم'}</h3></div><span className="dashboard-date-chip"><CalendarDays size={14} />{todayLabel}</span></div>
+    <section className="metric-grid dashboard-metrics">
       <MetricCard icon={Banknote} label={t.revenue} value={formatIQD(salesToday, locale)} note={`${todaysOrders.length} ${t.ordersCount}`} tone="green" />
       <MetricCard icon={ClipboardList} label={t.openOrders} value={String(activeOrders.length)} note={t.activeOrders} tone="blue" />
-      <MetricCard icon={Utensils} label={t.tablesOccupied} value={`${occupiedTables} / ${totalTables}`} note={t.liveTables} tone="amber" />
+      <MetricCard icon={Utensils} label={t.tablesOccupied} value={`${occupiedTables} / ${totalTables}`} note={`${availableTables} ${isKu ? 'مێز بەردەستە' : 'طاولة متاحة'}`} tone="amber" />
       <MetricCard icon={ArrowDownLeft} label={t.costs} value={formatIQD(expenseTotal, locale)} note={`${todaysExpenses.length} ${t.expensesCount}`} tone="rose" />
     </section>
-    <section className="dashboard-lower">
-      <div className="panel recent-panel">
+
+    <section className="dashboard-lower dashboard-redesign-lower">
+      <div className="panel recent-panel dashboard-recent">
         <div className="panel-heading"><div><span className="panel-kicker">{t.todayFlow}</span><h3>{t.recentOrders}</h3></div><Link href="/orders" className="text-link">{t.viewAll}<ArrowUpRight size={15} /></Link></div>
         {todaysOrders.length === 0 ? <EmptyState locale={locale} title={t.noOrders} detail={t.startOrder} /> : <div className="order-list">{todaysOrders.slice(0, 6).map((order: AnyRecord) => <OrderCompact key={order.id} order={order} data={data} locale={locale} t={t} />)}</div>}
       </div>
-      <aside className="panel service-panel">
-        <div className="panel-heading"><div><span className="panel-kicker">{locale === 'ku' ? 'ئێستا' : 'الآن'}</span><h3>{locale === 'ku' ? 'مێزەکان' : 'الطاولات'}</h3></div></div>
-        <div className="table-status-grid">
-          {data.tables.filter((table: AnyRecord) => table.active !== false).slice(0, 8).map((table: AnyRecord) => {
-            const status = getTableState(table);
-            return <div className={`mini-table ${status === 'occupied' || status === 'reserved' ? 'mini-table-busy' : ''}`} key={table.id}><span className="mini-table-status" /><b>{table.label}</b><small>{tableStatusLabel(status, locale, t)}</small></div>;
-          })}
-        </div>
-        <Link href="/tables" className="service-link">{locale === 'ku' ? 'بەڕێوەبردنی مێزەکان' : 'إدارة الطاولات'}<ArrowUpRight size={15} /></Link>
+      <aside className="panel dashboard-insights">
+        <div className="panel-heading"><div><span className="panel-kicker">{isKu ? 'زانیارییە خێراکان' : 'معلومات سريعة'}</span><h3>{isKu ? 'دۆخی قوبە' : 'حالة قوبا'}</h3></div><span className="insight-coffee"><Coffee size={18} /></span></div>
+        <div className="insight-row"><span className="insight-icon"><Utensils size={17} /></span><div><small>{isKu ? 'مێزی بەکارهاتوو' : 'الطاولات المستخدمة'}</small><b>{occupiedTables} / {totalTables}</b></div></div>
+        <div className="insight-row"><span className="insight-icon"><ClipboardList size={17} /></span><div><small>{isKu ? 'داواکارییەکانی ئەمڕۆ' : 'طلبات اليوم'}</small><b>{todaysOrders.length}</b></div></div>
+        <div className="insight-row"><span className="insight-icon"><Banknote size={17} /></span><div><small>{isKu ? 'زۆرترین فرۆشراو' : 'الأكثر مبيعاً'}</small><b>{topProduct ? topProduct[0] : '—'}</b></div></div>
+        <Link href="/reports" className="service-link">{t.reports}<ArrowUpRight size={15} /></Link>
       </aside>
     </section>
   </div>;
 }
-
 function MetricCard({ icon: Icon, label, value, note, tone }: { icon: any; label: string; value: string; note: string; tone: string }) {
   return <article className="metric-card" data-testid={`metric-${tone}`}><div className="metric-top"><span>{label}</span><span className={`metric-icon metric-${tone}`}><Icon size={17} /></span></div><b>{value}</b><small>{note}</small></article>;
 }

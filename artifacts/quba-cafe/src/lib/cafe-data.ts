@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
+  query,
   runTransaction,
   setDoc,
-  addDoc,
+  updateDoc,
+  where,
   type DocumentData,
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured, ownerUid } from './firebase';
@@ -21,8 +25,10 @@ import type {
   CafeSettings,
   CafeTable,
   CreateOrderInput,
+  OrderStatus,
   PaymentMethod,
   RecordCollection,
+  TableStatus,
 } from './types';
 
 const emptySnapshot: CafeDataSnapshot = {
@@ -39,6 +45,7 @@ const collectionNames: RecordCollection[] = [
   'categories',
   'products',
   'tables',
+  'orders',
   'expenses',
   'customers',
 ];
@@ -76,57 +83,105 @@ function withId<T>(id: string, data: DocumentData): T {
   return { id, ...data } as T;
 }
 
-export async function createRecord(
-  name: RecordCollection,
-  input: WritableRecord,
-): Promise<string> {
+function normalizeTableStatus(status?: TableStatus | null): TableStatus {
+  return status === 'available' || status === 'occupied' || status === 'reserved' || status === 'closed'
+    ? status
+    : 'available';
+}
+
+function normalizeOrderStatus(status?: OrderStatus | null): OrderStatus {
+  return status === 'new' || status === 'preparing' || status === 'ready' || status === 'delivered' || status === 'paid' || status === 'cancelled'
+    ? status
+    : 'new';
+}
+
+export async function createRecord(name: RecordCollection, input: WritableRecord): Promise<string> {
   assertOwner();
   const createdAt = new Date().toISOString();
-  const data = {
+  const payload = {
     ...input,
     createdAt,
     updatedAt: createdAt,
-  };
-  validateRecord(name, data);
-  const result = await addDoc(ownerCollection(name), data);
+  } as Record<string, unknown>;
+  validateRecord(name, payload);
+  const result = await addDoc(ownerCollection(name), payload);
   return result.id;
 }
 
-export async function updateRecord(
-  name: RecordCollection,
-  id: string,
-  changes: Record<string, unknown>,
-): Promise<void> {
+export async function updateRecord(name: RecordCollection, id: string, changes: Record<string, unknown>): Promise<void> {
   assertOwner();
   if (!id.trim()) throw new Error('A record ID is required.');
-  const data = { ...changes, updatedAt: new Date().toISOString() };
-  validateRecord(name, data, true);
-  await setDoc(doc(ownerCollection(name), id), data, { merge: true });
+  const payload = { ...changes, updatedAt: new Date().toISOString() } as Record<string, unknown>;
+  validateRecord(name, payload, true);
+  await setDoc(doc(ownerCollection(name), id), payload, { merge: true });
 }
 
-export async function deleteRecord(
-  name: RecordCollection,
-  id: string,
-): Promise<void> {
+export async function deleteRecord(name: RecordCollection, id: string): Promise<void> {
   assertOwner();
+  if (name === 'products' || name === 'customers' || name === 'orders') {
+    throw new Error('This record type is protected and cannot be deleted from the app.');
+  }
   if (!id.trim()) throw new Error('A record ID is required.');
   await deleteDoc(doc(ownerCollection(name), id));
 }
 
-function validateRecord(
-  name: RecordCollection,
-  data: Record<string, unknown>,
-  partial = false,
-) {
+function validateRecord(name: RecordCollection, data: Record<string, unknown>, partial = false) {
   if (name === 'products' && (!partial || 'priceIqd' in data)) {
-    assertWholeAmount(Number(data.priceIqd), 'Product price', true);
+    const value = Number(data.priceIqd ?? 0);
+    assertWholeAmount(value, 'Product price', true);
   }
   if (name === 'tables' && (!partial || 'seats' in data)) {
-    assertWholeAmount(Number(data.seats), 'Table seats');
+    const value = Number(data.seats ?? 0);
+    assertWholeAmount(value, 'Table seats');
   }
   if (name === 'expenses' && (!partial || 'amountIqd' in data)) {
-    assertWholeAmount(Number(data.amountIqd), 'Expense amount');
+    const value = Number(data.amountIqd ?? 0);
+    assertWholeAmount(value, 'Expense amount');
   }
+  if (name === 'tables' && 'status' in data) {
+    const maybeStatus = String(data.status ?? 'available');
+    const statuses = new Set(['available', 'occupied', 'reserved', 'closed']);
+    if (!statuses.has(maybeStatus)) {
+      throw new Error('Table status must be available, occupied, reserved, or closed.');
+    }
+  }
+  if (name === 'orders' && 'status' in data) {
+    const maybeStatus = String(data.status ?? 'new');
+    const statuses = new Set(['new', 'preparing', 'ready', 'delivered', 'paid', 'cancelled']);
+    if (!statuses.has(maybeStatus)) {
+      throw new Error('Order status is invalid.');
+    }
+  }
+}
+
+export async function upsertCustomer(input: { name?: string; phone?: string; notes?: string }): Promise<string | null> {
+  assertOwner();
+  const name = input.name?.trim() ?? '';
+  const phone = input.phone?.trim() ?? '';
+  if (!name && !phone) return null;
+
+  const customersRef = ownerCollection('customers');
+  const queryRef = phone ? query(customersRef, where('phone', '==', phone)) : query(customersRef, where('name', '==', name));
+  const found = await getDocs(queryRef);
+  if (!found.empty) {
+    const docId = found.docs[0].id;
+    await updateDoc(doc(customersRef, docId), {
+      name: name || found.docs[0].data().name,
+      phone: phone || found.docs[0].data().phone,
+      notes: input.notes ?? found.docs[0].data().notes ?? '',
+      updatedAt: new Date().toISOString(),
+    });
+    return docId;
+  }
+
+  const created = await addDoc(customersRef, {
+    name,
+    phone,
+    notes: input.notes ?? '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  return created.id;
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<string> {
@@ -142,31 +197,74 @@ export async function createOrder(input: CreateOrderInput): Promise<string> {
     assertWholeAmount(item.unitPriceIqd, 'Item price', true);
     return { ...item };
   });
-  const totalIqd = items.reduce(
-    (total, item) => total + item.quantity * item.unitPriceIqd,
-    0,
-  );
+  const totalIqd = items.reduce((total, item) => total + item.quantity * item.unitPriceIqd, 0);
   assertWholeAmount(totalIqd, 'Order total', true);
 
   const createdAt = new Date().toISOString();
+  const status = normalizeOrderStatus(input.status ?? 'new');
   const result = await addDoc(ownerCollection('orders'), {
     tableId: input.tableId || null,
     customerId: input.customerId || null,
     items,
     notes: input.notes?.trim() ?? '',
-    status: 'open',
+    status,
     totalIqd,
     payments: [],
     createdAt,
     paidAt: null,
+    updatedAt: createdAt,
   });
+
+  if (input.tableId) {
+    const tableRef = doc(ownerCollection('tables'), input.tableId);
+    const tableSnap = await getDocs(query(ownerCollection('tables'), where('__name__', '==', input.tableId)));
+    if (!tableSnap.empty) {
+      const tableData = tableSnap.docs[0].data() as Partial<CafeTable>;
+      const nextStatus = status === 'paid' || status === 'cancelled' ? 'available' : 'occupied';
+      await setDoc(tableRef, {
+        status: normalizeTableStatus(nextStatus),
+        active: nextStatus !== 'closed',
+        updatedAt: createdAt,
+      }, { merge: true });
+    }
+  }
+
   return result.id;
 }
 
-export async function addPayment(
-  orderId: string,
-  input: { amountIqd: number; method: PaymentMethod },
-): Promise<void> {
+export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
+  assertOwner();
+  if (!db) throw new Error('Firebase is not configured for this app.');
+  const orderRef = doc(ownerCollection('orders'), orderId);
+
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(orderRef);
+    if (!snapshot.exists()) throw new Error('Order not found.');
+    const order = snapshot.data() as Omit<CafeOrder, 'id'>;
+    const nextStatus = normalizeOrderStatus(status);
+
+    transaction.update(orderRef, {
+      status: nextStatus,
+      updatedAt: new Date().toISOString(),
+      paidAt: nextStatus === 'paid' ? new Date().toISOString() : order.paidAt ?? null,
+    });
+
+    if (order.tableId) {
+      const tableRef = doc(ownerCollection('tables'), order.tableId);
+      const tableSnap = await transaction.get(tableRef);
+      if (tableSnap.exists()) {
+        const nextTableStatus = nextStatus === 'paid' || nextStatus === 'cancelled' ? 'available' : 'occupied';
+        transaction.update(tableRef, {
+          status: normalizeTableStatus(nextTableStatus),
+          active: nextTableStatus !== 'closed',
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
+  });
+}
+
+export async function addPayment(orderId: string, input: { amountIqd: number; method: PaymentMethod }): Promise<void> {
   assertOwner();
   assertWholeAmount(input.amountIqd, 'Payment amount');
   if (!db) throw new Error('Firebase is not configured for this app.');
@@ -176,9 +274,8 @@ export async function addPayment(
     const snapshot = await transaction.get(orderRef);
     if (!snapshot.exists()) throw new Error('Order not found.');
     const order = snapshot.data() as Omit<CafeOrder, 'id'>;
-    if (order.status !== 'open') {
-      throw new Error('Only open orders can receive payments.');
-    }
+    if (order.status === 'cancelled') throw new Error('Cancelled orders cannot receive payments.');
+
     const payments = order.payments ?? [];
     const paidIqd = payments.reduce((sum, payment) => sum + payment.amountIqd, 0);
     const dueIqd = order.totalIqd - paidIqd;
@@ -194,14 +291,27 @@ export async function addPayment(
         createdAt: new Date().toISOString(),
       },
     ];
-    const isPaid =
-      nextPayments.reduce((sum, payment) => sum + payment.amountIqd, 0) >=
-      order.totalIqd;
+    const isPaid = nextPayments.reduce((sum, payment) => sum + payment.amountIqd, 0) >= order.totalIqd;
+
     transaction.update(orderRef, {
       payments: nextPayments,
-      status: isPaid ? 'paid' : 'open',
+      status: isPaid ? 'paid' : 'delivered',
       paidAt: isPaid ? new Date().toISOString() : null,
+      updatedAt: new Date().toISOString(),
     });
+
+    if (order.tableId) {
+      const tableRef = doc(ownerCollection('tables'), order.tableId);
+      const tableSnap = await transaction.get(tableRef);
+      if (tableSnap.exists()) {
+        const nextTableStatus = isPaid ? 'available' : 'occupied';
+        transaction.update(tableRef, {
+          status: normalizeTableStatus(nextTableStatus),
+          active: nextTableStatus !== 'closed',
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    }
   });
 }
 
@@ -214,14 +324,33 @@ export async function cancelOrder(orderId: string): Promise<void> {
     const snapshot = await transaction.get(orderRef);
     if (!snapshot.exists()) throw new Error('Order not found.');
     const order = snapshot.data() as Omit<CafeOrder, 'id'>;
-    if (order.status !== 'open') {
-      throw new Error('Only open orders can be cancelled.');
+    if (order.status === 'paid' || order.status === 'cancelled') {
+      throw new Error('This order cannot be cancelled.');
     }
-    if (order.payments?.length) {
-      throw new Error('An order with payments cannot be cancelled.');
+    transaction.update(orderRef, { status: 'cancelled', updatedAt: new Date().toISOString() });
+
+    if (order.tableId) {
+      const tableRef = doc(ownerCollection('tables'), order.tableId);
+      const tableSnap = await transaction.get(tableRef);
+      if (tableSnap.exists()) {
+        transaction.update(tableRef, {
+          status: 'available',
+          active: true,
+          updatedAt: new Date().toISOString(),
+        });
+      }
     }
-    transaction.update(orderRef, { status: 'cancelled' });
   });
+}
+
+export async function updateTableStatus(tableId: string, status: TableStatus): Promise<void> {
+  assertOwner();
+  const targetStatus = normalizeTableStatus(status);
+  await setDoc(doc(ownerCollection('tables'), tableId), {
+    status: targetStatus,
+    active: targetStatus !== 'closed',
+    updatedAt: new Date().toISOString(),
+  }, { merge: true });
 }
 
 export async function saveSettings(settings: CafeSettings): Promise<void> {
@@ -245,10 +374,9 @@ export function useCafeData() {
     }
 
     let active = true;
-    let recordUnsubs: (() => void)[] = [];
+    const recordUnsubs: (() => void)[] = [];
     const stopRecords = () => {
       recordUnsubs.forEach((unsubscribe) => unsubscribe());
-      recordUnsubs = [];
     };
 
     const stopAuth = onAuthStateChanged(auth, (user) => {
@@ -280,9 +408,7 @@ export function useCafeData() {
         const unsubscribe = onSnapshot(
           ownerCollection(name),
           (snapshot) => {
-            const records = snapshot.docs.map((item) =>
-              withId(item.id, item.data()),
-            );
+            const records = snapshot.docs.map((item) => withId(item.id, item.data()));
             Object.assign(next, { [name]: records });
             if (active) setData({ ...next });
             markLoaded(name);
@@ -299,9 +425,7 @@ export function useCafeData() {
       const settingsUnsubscribe = onSnapshot(
         doc(ownerCollection('settings'), 'current'),
         (snapshot) => {
-          next.settings = snapshot.exists()
-            ? withId('current', snapshot.data())
-            : null;
+          next.settings = snapshot.exists() ? withId('current', snapshot.data()) : null;
           if (active) setData({ ...next });
           markLoaded('settings');
         },
@@ -329,8 +453,11 @@ export function useCafeData() {
     updateRecord,
     deleteRecord,
     createOrder,
+    updateOrderStatus,
     addPayment,
     cancelOrder,
+    updateTableStatus,
+    upsertCustomer,
     saveSettings,
   };
 }

@@ -223,7 +223,7 @@ export async function createOrder(input: CreateOrderInput): Promise<string> {
       const nextStatus = status === 'paid' || status === 'cancelled' ? 'available' : 'occupied';
       await setDoc(tableRef, {
         status: normalizeTableStatus(nextStatus),
-        active: nextStatus !== 'closed',
+        active: true,
         updatedAt: createdAt,
       }, { merge: true });
     }
@@ -256,7 +256,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
         const nextTableStatus = nextStatus === 'paid' || nextStatus === 'cancelled' ? 'available' : 'occupied';
         transaction.update(tableRef, {
           status: normalizeTableStatus(nextTableStatus),
-          active: nextTableStatus !== 'closed',
+          active: true,
           updatedAt: new Date().toISOString(),
         });
       }
@@ -307,7 +307,7 @@ export async function addPayment(orderId: string, input: { amountIqd: number; me
         const nextTableStatus = isPaid ? 'available' : 'occupied';
         transaction.update(tableRef, {
           status: normalizeTableStatus(nextTableStatus),
-          active: nextTableStatus !== 'closed',
+          active: true,
           updatedAt: new Date().toISOString(),
         });
       }

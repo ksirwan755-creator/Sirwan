@@ -1,6 +1,7 @@
 export type LocaleCode = 'ku' | 'ar';
 export type PaymentMethod = 'cash' | 'card' | 'other';
-export type OrderStatus = 'open' | 'paid' | 'cancelled';
+export type TableStatus = 'available' | 'occupied' | 'reserved' | 'closed';
+export type OrderStatus = 'new' | 'preparing' | 'ready' | 'delivered' | 'paid' | 'cancelled';
 
 export interface CafeCategory {
   id: string;
@@ -27,6 +28,7 @@ export interface CafeTable {
   label: string;
   seats: number;
   active: boolean;
+  status?: TableStatus;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -99,6 +101,7 @@ export type RecordCollection =
   | 'categories'
   | 'products'
   | 'tables'
+  | 'orders'
   | 'expenses'
   | 'customers';
 
@@ -107,4 +110,5 @@ export interface CreateOrderInput {
   customerId: string | null;
   items: OrderItem[];
   notes?: string;
+  status?: OrderStatus;
 }

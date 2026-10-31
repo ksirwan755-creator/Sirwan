@@ -22,9 +22,9 @@ type AnyRecord = Record<string, any>;
 const copy = {
   ku: {
     brand: 'QUBA', subbrand: 'کافێ و چێشتخانە',
-    dashboard: 'پوختەی ڕۆژ', products: 'مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان',
+    dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان',
     orders: 'داواکارییەکان', customers: 'کڕیارەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
-    settings: 'ڕێکخستن', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
+    settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
     recentOrders: 'دوایین داواکارییەکان', viewAll: 'بینینی هەموو', noOrders: 'هێشتا داواکارییەک نییە',
@@ -58,9 +58,9 @@ const copy = {
   },
   ar: {
     brand: 'QUBA', subbrand: 'مقهى ومطعم',
-    dashboard: 'ملخص اليوم', products: 'القائمة', categories: 'الفئات', tables: 'الطاولات',
+    dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات',
     orders: 'الطلبات', customers: 'الزبائن', expenses: 'المصروفات', reports: 'التقارير',
-    settings: 'الإعدادات', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
+    settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
     recentOrders: 'أحدث الطلبات', viewAll: 'عرض الكل', noOrders: 'لا توجد طلبات بعد',
@@ -97,7 +97,7 @@ const copy = {
 const navItems = [
   { path: '/', key: 'dashboard', icon: LayoutDashboard },
   { path: '/orders', key: 'orders', icon: ClipboardList },
-  { path: '/products', key: 'products', icon: Coffee },
+  { path: '/menu', key: 'products', icon: Coffee },
   { path: '/categories', key: 'categories', icon: Boxes },
   { path: '/tables', key: 'tables', icon: Utensils },
   { path: '/customers', key: 'customers', icon: Users },
@@ -122,7 +122,11 @@ function dateText(value: any, locale: Locale) {
   return new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
 }
 function todayKey(date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
-function titleFor(path: string, t: any) { return navItems.find((item) => item.path === path) ? t[navItems.find((item) => item.path === path)!.key] : t.dashboard; }
+function titleFor(path: string, t: any) {
+  const normalizedPath = path === '/products' ? '/menu' : path;
+  const item = navItems.find((candidate) => candidate.path === normalizedPath);
+  return item ? t[item.key] : t.dashboard;
+}
 
 function App() {
   const [locale, setLocale] = useState<Locale>('ku');
@@ -298,13 +302,16 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
   useEffect(() => {
     if (data?.settings?.defaultLocale && (data.settings.defaultLocale === 'ku' || data.settings.defaultLocale === 'ar')) setLocale(data.settings.defaultLocale);
   }, [data?.settings?.defaultLocale, setLocale]);
-  useEffect(() => { if (path === '/login') setPath('/'); }, [path, setPath]);
+  useEffect(() => {
+    if (path === '/login') setPath('/');
+    else if (path === '/products') setPath('/menu');
+  }, [path, setPath]);
   const snap = data || { categories: [], products: [], tables: [], orders: [], expenses: [], customers: [], settings: null };
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 2400); };
   const pageTitle = titleFor(path, t);
   const content = () => {
     if (loading) return <LoadingContent locale={locale} />;
-    if (path === '/products') return <>
+    if (path === '/menu' || path === '/products') return <>
       {error && <FirestoreReadWarning locale={locale} message={error} onRetry={() => window.location.reload()} />}
       <DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />
     </>;

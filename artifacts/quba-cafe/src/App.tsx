@@ -22,7 +22,7 @@ type AnyRecord = Record<string, any>;
 const copy = {
   ku: {
     brand: 'QUBA', subbrand: 'کافێ و چێشتخانە',
-    dashboard: 'پوختەی ڕۆژ', products: 'بەرهەمەکان', categories: 'جۆرەکان', tables: 'مێزەکان',
+    dashboard: 'پوختەی ڕۆژ', products: 'مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان',
     orders: 'داواکارییەکان', customers: 'کڕیارەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
     settings: 'ڕێکخستن', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
@@ -30,7 +30,7 @@ const copy = {
     recentOrders: 'دوایین داواکارییەکان', viewAll: 'بینینی هەموو', noOrders: 'هێشتا داواکارییەک نییە',
     startOrder: 'داواکارییەکان لێرە دەردەکەون کاتێک تۆمار کران.',
     emptyTitle: 'هێشتا هیچ تۆمارێک نییە', emptyText: 'کاتێک تۆمارێک زیاد بکەیت، لێرە دەردەکەوێت.',
-    add: 'زیادکردن', search: 'گەڕان', name: 'ناو', nameKu: 'ناو بە کوردی', nameAr: 'ناو بە عەرەبی',
+    add: 'زیادکردن', addItem: 'زیادکردنی بەرهەم', search: 'گەڕان', name: 'ناو', nameKu: 'ناو بە کوردی', nameAr: 'ناو بە عەرەبی',
     price: 'نرخ (دینار)', category: 'جۆر', seats: 'ژمارەی کورسی', label: 'ژمارە / ناونیشانی مێز',
     phone: 'ژمارەی تەلەفۆن', notes: 'تێبینی', titleKu: 'ناونیشان بە کوردی', titleAr: 'ناونیشان بە عەرەبی',
     expenseCategory: 'جۆری خەرجی', amount: 'بڕ (دینار)', date: 'بەروار', active: 'چالاک',
@@ -51,12 +51,14 @@ const copy = {
     from: 'لە', to: 'بۆ', ordersCount: 'ژمارەی داواکاری', expensesCount: 'ژمارەی خەرجی', sortOrder: 'ڕیزبەندی',
     net: 'داهاتی پاک', restaurant: 'ناوی چێشتخانە', defaultLanguage: 'زمانی سەرەکی',
     saved: 'پاشەکەوت کرا', saveSettings: 'پاشەکەوتکردنی ڕێکخستن', serverError: 'هەڵەیەک ڕوویدا',
+    firestoreDenied: 'دەستگەیشتن ڕەتکرایەوە؛ Firestore rules و هەژماری خاوەن بپشکنە.',
+    firestoreReadWarning: 'نەتوانرا داتای Firestore بخوێندرێتەوە؛ هۆکار:',
     noResults: 'هیچ ئەنجامێک نەدۆزرایەوە', filterDate: 'پاڵاوتن بە بەروار', allOrders: 'هەموو داواکارییەکان',
     todayLabel: 'ئەمڕۆ', goodMorning: 'بەیانی باش', goodEvening: 'ئێوارە باش',
   },
   ar: {
     brand: 'QUBA', subbrand: 'مقهى ومطعم',
-    dashboard: 'ملخص اليوم', products: 'المنتجات', categories: 'الفئات', tables: 'الطاولات',
+    dashboard: 'ملخص اليوم', products: 'القائمة', categories: 'الفئات', tables: 'الطاولات',
     orders: 'الطلبات', customers: 'الزبائن', expenses: 'المصروفات', reports: 'التقارير',
     settings: 'الإعدادات', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
@@ -64,7 +66,7 @@ const copy = {
     recentOrders: 'أحدث الطلبات', viewAll: 'عرض الكل', noOrders: 'لا توجد طلبات بعد',
     startOrder: 'ستظهر الطلبات هنا عند تسجيلها.',
     emptyTitle: 'لا توجد سجلات بعد', emptyText: 'ستظهر السجلات هنا بعد إضافتها.',
-    add: 'إضافة', search: 'بحث', name: 'الاسم', nameKu: 'الاسم بالكردية', nameAr: 'الاسم بالعربية',
+    add: 'إضافة', addItem: 'إضافة عنصر للقائمة', search: 'بحث', name: 'الاسم', nameKu: 'الاسم بالكردية', nameAr: 'الاسم بالعربية',
     price: 'السعر (دينار)', category: 'الفئة', seats: 'عدد المقاعد', label: 'رقم / اسم الطاولة',
     phone: 'رقم الهاتف', notes: 'ملاحظات', titleKu: 'العنوان بالكردية', titleAr: 'العنوان بالعربية',
     expenseCategory: 'فئة المصروف', amount: 'المبلغ (دينار)', date: 'التاريخ', active: 'نشط',
@@ -85,6 +87,8 @@ const copy = {
     from: 'من', to: 'إلى', ordersCount: 'عدد الطلبات', expensesCount: 'عدد المصروفات', sortOrder: 'الترتيب',
     net: 'صافي الإيراد', restaurant: 'اسم المطعم', defaultLanguage: 'اللغة الافتراضية',
     saved: 'تم الحفظ', saveSettings: 'حفظ الإعدادات', serverError: 'حدث خطأ',
+    firestoreDenied: 'تم رفض الوصول؛ تحقق من قواعد Firestore وحساب المالك.',
+    firestoreReadWarning: 'تعذرت قراءة بيانات Firestore؛ السبب:',
     noResults: 'لم يتم العثور على نتائج', filterDate: 'تصفية حسب التاريخ', allOrders: 'كل الطلبات',
     todayLabel: 'اليوم', goodMorning: 'صباح الخير', goodEvening: 'مساء الخير',
   },
@@ -300,10 +304,13 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
   const pageTitle = titleFor(path, t);
   const content = () => {
     if (loading) return <LoadingContent locale={locale} />;
-    if (error) return <ErrorContent locale={locale} message={t.serverError} onRetry={() => window.location.reload()} />;
+    if (path === '/products') return <>
+      {error && <FirestoreReadWarning locale={locale} message={error} onRetry={() => window.location.reload()} />}
+      <DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />
+    </>;
+    if (error) return <ErrorContent locale={locale} message={error} onRetry={() => window.location.reload()} />;
     if (path === '/') return <Dashboard data={snap} locale={locale} t={t} />;
     if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/products') return <DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <DataPage kind="tables" records={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
@@ -352,6 +359,13 @@ function LoadingContent({ locale }: { locale: Locale }) {
 }
 function ErrorContent({ locale, message, onRetry }: { locale: Locale; message: string; onRetry: () => void }) {
   return <section className="state-panel error-panel" role="alert" data-testid="status-data-error"><CircleAlert size={24} /><h2>{copy[locale].serverError}</h2><p>{message}</p><button type="button" className="button button-secondary" onClick={onRetry}>{copy[locale].retry}</button></section>;
+}
+function FirestoreReadWarning({ locale, message, onRetry }: { locale: Locale; message: string; onRetry: () => void }) {
+  return <section className="firestore-read-warning" role="alert" data-testid="status-menu-firestore-error">
+    <CircleAlert size={17} />
+    <div><b>{copy[locale].firestoreReadWarning}</b><code dir="ltr">{message}</code></div>
+    <button type="button" className="button button-secondary" onClick={onRetry}>{copy[locale].retry}</button>
+  </section>;
 }
 function NotFound({ locale }: { locale: Locale }) {
   return <section className="state-panel"><Search size={24} /><h2>{copy[locale].noResults}</h2></section>;
@@ -414,6 +428,13 @@ const fieldText = (key: string, t: any) => {
   const fields: Record<string, string> = { name: t.name, nameKu: t.nameKu, nameAr: t.nameAr, sortOrder: t.sortOrder, priceIqd: t.price, categoryId: t.category, label: t.label, seats: t.seats, phone: t.phone, notes: t.notes, titleKu: t.titleKu, titleAr: t.titleAr, category: t.expenseCategory, amountIqd: t.amount, date: t.date };
   return fields[key] || key;
 };
+function recordActionError(error: unknown, t: any) {
+  const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  return code === 'permission-denied' || message.includes('insufficient permissions')
+    ? t.firestoreDenied
+    : t.serverError;
+}
 const schemas: Record<RecordKind, string[]> = {
   categories: ['nameKu', 'nameAr', 'sortOrder'],
   products: ['nameKu', 'nameAr', 'categoryId', 'priceIqd', 'active'],
@@ -438,18 +459,18 @@ function DataPage({ kind, records, categories, locale, t, actions, notify }: { k
       if (formRecord?.id) await actions.updateRecord(kind, formRecord.id, payload);
       else await actions.createRecord(kind, { ...(kind === 'categories' ? { sortOrder: 0 } : {}), ...payload });
       setFormRecord(null); notify(t.saved);
-    } catch { notify(t.serverError); }
+    } catch (error) { notify(recordActionError(error, t)); }
     finally { setBusy(false); }
   }
   async function remove() {
     if (!deleting) return;
     setBusy(true);
     try { await actions.deleteRecord(kind, deleting.id); setDeleting(null); notify(t.saved); }
-    catch { notify(t.serverError); }
+    catch (error) { notify(recordActionError(error, t)); }
     finally { setBusy(false); }
   }
   return <>
-    <div className="list-toolbar"><label className="search-box"><Search size={17} /><input data-testid={`input-search-${kind}`} placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} /></label><button className="button button-primary" onClick={() => setFormRecord({})} data-testid={`button-add-${kind}`}><Plus size={17} />{t.add}</button></div>
+    <div className="list-toolbar"><label className="search-box"><Search size={17} /><input data-testid={`input-search-${kind}`} placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} /></label><button type="button" className="button button-primary" onClick={() => setFormRecord({})} data-testid={`button-add-${kind}`}><Plus size={17} />{kind === 'products' ? t.addItem : t.add}</button></div>
     {filtered.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : undefined} /> : <div className="data-table-wrap"><table className="data-table"><thead><tr>{fields.map((field) => <th key={field}>{fieldText(field, t)}</th>)}<th>{t.actions}</th></tr></thead><tbody>
       {filtered.map((record) => <tr key={record.id} data-testid={`row-${kind}-${record.id}`}>
         {fields.map((field) => <td key={field}>{field === 'active' ? <span className={`status-badge ${record.active === false ? 'badge-cancelled' : 'badge-paid'}`}>{record.active === false ? t.inactive : t.active}</span> : field === 'categoryId' ? (localized(categories?.find((x) => x.id === record.categoryId), locale) || t.noCategory) : field === 'priceIqd' || field === 'amountIqd' ? formatIQD(Number(record[field]), locale) : field === 'date' ? dateText(record[field], locale) : <span className={field === 'notes' ? 'muted-cell' : ''}>{(field === 'nameKu' && (kind === 'products' || kind === 'categories')) || (field === 'titleKu' && kind === 'expenses') ? localized(record, locale, field === 'titleKu' ? 'title' : 'name') : record[field] || '—'}</span>}</td>)}

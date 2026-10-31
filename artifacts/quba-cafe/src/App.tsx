@@ -43,7 +43,7 @@ const getTableState = (table: AnyRecord | null | undefined): TableStatus => {
 
 const copy = {
   ku: {
-    brand: 'QUBA', subbrand: 'کافێ و چێشتخانە',
+    brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
     dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان',
     orders: 'داواکارییەکان', customers: 'کڕیارەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
@@ -86,7 +86,7 @@ const copy = {
     noCustomer: 'کڕیار نەپێدراوە', tableState: 'دۆخی مێز', orderTime: 'کاتی داواکاری', paymentStatus: 'دۆخی پارەدان',
   },
   ar: {
-    brand: 'QUBA', subbrand: 'مقهى ومطعم',
+    brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
     dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات',
     orders: 'الطلبات', customers: 'الزبائن', expenses: 'المصروفات', reports: 'التقارير',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
@@ -150,6 +150,14 @@ function localized(value: AnyRecord | null | undefined, locale: Locale, prefix =
 }
 function asDate(value: any): Date {
   return value?.toDate ? value.toDate() : new Date(value || 0);
+}
+function dateText(value: any, locale: Locale) {
+  const date = asDate(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
 }
 function todayKey(date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function titleFor(path: string, t: any) {

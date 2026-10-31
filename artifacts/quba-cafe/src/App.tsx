@@ -47,6 +47,7 @@ const copy = {
     inactive: 'ناچالاک', firebaseMissing: 'بەستەری Firebase ئامادە نییە', firebaseExplain: 'ڕێکخستنی Firebase Web App و UIDی خاوەن وەک گۆڕاوەکانی ژینگە دابنێ، پاشان یاساکانی پاراستنی Firestore بڵاو بکەرەوە. هیچ داتای نموونەیی پیشان نادرێت.',
     loginTitle: 'بەخێربێیتەوە', loginText: 'بچۆ ژوورەوە بۆ بەڕێوەبردنی ڕۆژانەی قوبە.', email: 'ئیمەیڵ',
     password: 'وشەی نهێنی', login: 'چوونەژوورەوە', loginError: 'چوونەژوورەوە سەرکەوتوو نەبوو. زانیارییەکانت بپشکنە.',
+    logoutError: 'چوونەدەرەوە سەرکەوتوو نەبوو. دووبارە هەوڵ بدەرەوە.',
     notOwner: 'ئەم هەژمارە ڕێگەی چوونەژوورەوەی نییە.', reportTitle: 'ڕاپۆرتی بازرگانی',
     from: 'لە', to: 'بۆ', ordersCount: 'ژمارەی داواکاری', expensesCount: 'ژمارەی خەرجی', sortOrder: 'ڕیزبەندی',
     net: 'داهاتی پاک', restaurant: 'ناوی چێشتخانە', defaultLanguage: 'زمانی سەرەکی',
@@ -83,6 +84,7 @@ const copy = {
     inactive: 'غير نشط', firebaseMissing: 'Firebase غير مُعدّ', firebaseExplain: 'أضف إعدادات تطبيق Firebase ومعرّف UID للمالك كمتغيرات بيئة، ثم انشر قواعد Firestore المرفقة. لن نعرض أي بيانات تجريبية.',
     loginTitle: 'مرحباً بعودتك', loginText: 'سجّل الدخول لإدارة يوم قوبا.', email: 'البريد الإلكتروني',
     password: 'كلمة المرور', login: 'تسجيل الدخول', loginError: 'تعذّر تسجيل الدخول. تحقق من بياناتك.',
+    logoutError: 'تعذّر تسجيل الخروج. حاول مرة أخرى.',
     notOwner: 'هذا الحساب غير مخوّل بالدخول.', reportTitle: 'تقرير النشاط',
     from: 'من', to: 'إلى', ordersCount: 'عدد الطلبات', expensesCount: 'عدد المصروفات', sortOrder: 'الترتيب',
     net: 'صافي الإيراد', restaurant: 'اسم المطعم', defaultLanguage: 'اللغة الافتراضية',
@@ -147,6 +149,15 @@ function App() {
   }, []);
 
   const t = copy[locale];
+  async function handleSignOut() {
+    await signOutOwner();
+    setAuthError('');
+    setUser(null);
+    setAuthReady(true);
+    const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
+    const loginPath = new URL('login', baseUrl).pathname;
+    window.history.replaceState(null, '', loginPath);
+  }
   if (!isFirebaseConfigured) return <SetupNotice locale={locale} onLocale={setLocale} />;
   if (!authReady) return <LoadingScreen locale={locale} />;
   if (!user) return <LoginScreen locale={locale} onLocale={setLocale} authError={authError} onSignIn={async (email, password) => {
@@ -164,7 +175,7 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <RoutedBoundary>
-            <AuthenticatedApp locale={locale} setLocale={setLocale} onSignOut={() => signOutOwner()} t={t} />
+            <AuthenticatedApp locale={locale} setLocale={setLocale} onSignOut={handleSignOut} t={t} />
           </RoutedBoundary>
         </WouterRouter>
         <Toaster />
@@ -293,12 +304,13 @@ function Brand({ locale }: { locale: Locale }) {
   return <div className="brand"><span className="brand-symbol"><span /><span /><span /></span><span className="brand-type"><b>QUBA</b><small>{copy[locale].subbrand}</small></span></div>;
 }
 
-function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => void; t: any }) {
+function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => Promise<void>; t: any }) {
   const dataState = useCafeData();
   const { data, loading, error } = dataState;
   const [path, setPath] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const [signingOut, setSigningOut] = useState(false);
   useEffect(() => {
     if (data?.settings?.defaultLocale && (data.settings.defaultLocale === 'ku' || data.settings.defaultLocale === 'ar')) setLocale(data.settings.defaultLocale);
   }, [data?.settings?.defaultLocale, setLocale]);
@@ -308,6 +320,16 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
   }, [path, setPath]);
   const snap = data || { categories: [], products: [], tables: [], orders: [], expenses: [], customers: [], settings: null };
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 2400); };
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await onSignOut();
+    } catch {
+      notify(t.logoutError);
+      setSigningOut(false);
+    }
+  }
   const pageTitle = titleFor(path, t);
   const content = () => {
     if (loading) return <LoadingContent locale={locale} />;
@@ -339,7 +361,9 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
       <div className="sidebar-bottom">
         <div className="side-status"><span className="status-dot" /><span>{locale === 'ku' ? 'هەموو زانیارییەکان پاشەکەوت دەبن' : 'يتم حفظ البيانات تلقائياً'}</span></div>
         <LocaleSwitch locale={locale} onLocale={setLocale} />
-        <button className="signout-button" type="button" onClick={onSignOut} data-testid="button-signout"><LogOut size={16} />{t.signOut}</button>
+        <button className="signout-button" type="button" onClick={() => { void handleSignOut(); }} disabled={signingOut} data-testid="button-signout">
+          {signingOut ? <LoaderCircle className="spin" size={16} /> : <LogOut size={16} />}{t.signOut}
+        </button>
       </div>
     </aside>
     {menuOpen && <button className="mobile-scrim" aria-label="Close menu" type="button" onClick={() => setMenuOpen(false)} />}

@@ -19,6 +19,28 @@ type Locale = 'ku' | 'ar';
 type RecordKind = 'categories' | 'products' | 'tables' | 'customers' | 'expenses';
 type AnyRecord = Record<string, any>;
 
+type TableStatus = 'available' | 'occupied' | 'reserved' | 'closed';
+type OrderStatus = 'new' | 'preparing' | 'ready' | 'delivered' | 'paid' | 'cancelled';
+
+const normalizeOrderStatus = (value?: string | null): OrderStatus => {
+  if (['new', 'preparing', 'ready', 'delivered', 'paid', 'cancelled'].includes(String(value ?? ''))) return String(value) as OrderStatus;
+  if (value === 'open') return 'new';
+  if (value === 'pending') return 'preparing';
+  if (value === 'completed') return 'delivered';
+  return 'new';
+};
+
+const normalizeTableStatus = (value?: string | null, active?: boolean): TableStatus => {
+  if (['available', 'occupied', 'reserved', 'closed'].includes(String(value ?? ''))) return String(value) as TableStatus;
+  if (active === false) return 'closed';
+  return 'available';
+};
+
+const getTableState = (table: AnyRecord | null | undefined): TableStatus => {
+  if (!table) return 'available';
+  return normalizeTableStatus(table.status, table.active);
+};
+
 const copy = {
   ku: {
     brand: 'QUBA', subbrand: 'کافێ و چێشتخانە',
@@ -31,7 +53,7 @@ const copy = {
     startOrder: 'داواکارییەکان لێرە دەردەکەون کاتێک تۆمار کران.',
     emptyTitle: 'هێشتا هیچ تۆمارێک نییە', emptyText: 'کاتێک تۆمارێک زیاد بکەیت، لێرە دەردەکەوێت.',
     add: 'زیادکردن', addItem: 'زیادکردنی بەرهەم', search: 'گەڕان', name: 'ناو', nameKu: 'ناو بە کوردی', nameAr: 'ناو بە عەرەبی',
-    price: 'نرخ (دینار)', category: 'جۆر', foodCategory: 'خواردن', beverageCategory: 'خواردنەوە', seats: 'ژمارەی کورسی', label: 'ژمارە / ناونیشانی مێز',
+    price: 'نرخ (دینار)', category: 'جۆر', foodCategory: 'خواردن', beverageCategory: 'خواردنەوە', seats: 'ژمارەی کورسی', label: 'ژمارە / ناونیشان',
     phone: 'ژمارەی تەلەفۆن', notes: 'تێبینی', titleKu: 'ناونیشان بە کوردی', titleAr: 'ناونیشان بە عەرەبی',
     expenseCategory: 'جۆری خەرجی', amount: 'بڕ (دینار)', date: 'بەروار', active: 'چالاک',
     actions: 'کردار', save: 'پاشەکەوتکردن', cancel: 'پاشگەزبوونەوە', edit: 'دەستکاریکردن',
@@ -40,11 +62,11 @@ const copy = {
     status: 'دۆخ', total: 'کۆی گشتی', table: 'مێز', customer: 'کڕیار', items: 'بەرهەم',
     created: 'کاتی تۆمارکردن', payment: 'پارەدان', addPayment: 'تۆمارکردنی پارەدان',
     paymentMethod: 'شێوازی پارەدان', cash: 'نەقد', card: 'کارت', other: 'تر',
-    paidAmount: 'بڕی پارەدراو', cancelOrder: 'هەڵوەشاندنەوەی داواکاری', confirmCancelOrder: 'دڵنیایت لە هەڵوەشاندنەوەی ئەم داواکارییە؟', newOrder: 'داواکاریی نوێ',
+    paidAmount: 'بڕی پارەدراو', cancelOrder: 'هەڵوەشاندنەوەی داواکاری', confirmCancelOrder: 'دڵنیایت لە هەڵوەشاندنەوەی ئەم داواکارە؟', newOrder: 'داواکارییەکی نوێ',
     quantity: 'دانە', noteOrder: 'تێبینی بۆ داواکاری', selectTable: 'مێز هەڵبژێرە',
     chooseProducts: 'بەرهەم هەڵبژێرە', createOrder: 'تۆمارکردنی داواکاری', noProducts: 'بەرهەمێک نییە بۆ داواکاری.',
-    expense: 'خەرجی', noCategory: 'بێ جۆر', loading: 'تکایە چاوەڕێ بکە...', retry: 'دووبارە هەوڵبدەرەوە', ownerDesk: 'ئامرازی بەڕێوەبەر', close: 'داخستن', openMenu: 'کردنەوەی مێنیو', decrease: 'کەمکردنەوە', increase: 'زیادکردن', language: 'زمان',
-    inactive: 'ناچالاک', firebaseMissing: 'بەستەری Firebase ئامادە نییە', firebaseExplain: 'ڕێکخستنی Firebase Web App و UIDی خاوەن وەک گۆڕاوەکانی ژینگە دابنێ، پاشان یاساکانی پاراستنی Firestore بڵاو بکەرەوە. هیچ داتای نموونەیی پیشان نادرێت.',
+    expense: 'خەرجی', noCategory: 'بێ جۆر', loading: 'تکایە چاوەڕێ بکە...', retry: 'دووبارە هەوڵبدەرەوە', ownerDesk: 'ئامرازی بەڕێوەبەر', close: 'داخستن',
+    inactive: 'ناچالاک', firebaseMissing: 'بەستەری Firebase ئامادە نییە', firebaseExplain: 'ڕێکخستنی Firebase Web App و UIDی خاوەن وەک گۆڕاوەکان.',
     loginTitle: 'بەخێربێیتەوە', loginText: 'بچۆ ژوورەوە بۆ بەڕێوەبردنی ڕۆژانەی قوبە.', email: 'ئیمەیڵ',
     password: 'وشەی نهێنی', login: 'چوونەژوورەوە', loginError: 'چوونەژوورەوە سەرکەوتوو نەبوو. زانیارییەکانت بپشکنە.',
     logoutError: 'چوونەدەرەوە سەرکەوتوو نەبوو. دووبارە هەوڵ بدەرەوە.',
@@ -56,6 +78,12 @@ const copy = {
     firestoreReadWarning: 'نەتوانرا داتای Firestore بخوێندرێتەوە؛ هۆکار:',
     noResults: 'هیچ ئەنجامێک نەدۆزرایەوە', filterDate: 'پاڵاوتن بە بەروار', allOrders: 'هەموو داواکارییەکان',
     todayLabel: 'ئەمڕۆ', goodMorning: 'بەیانی باش', goodEvening: 'ئێوارە باش',
+    tableAvailable: 'بەردەست', tableOccupied: 'بەکارھاتوو', tableReserved: 'پاشەڕگەز', tableClosed: 'داخراو',
+    orderNew: 'نوێ', orderPreparing: 'ئامادەکردن', orderReady: 'ئامادە', orderDelivered: 'گەیاندرا', orderPaid: 'پارەدراو', orderCancelled: 'هەڵوەشێنراوە',
+    statusFilter: 'فلتەرکردنی دۆخ', updateStatus: 'نوێکردنەوەی دۆخ', customerDetails: 'زانیارییەکانی کڕیار', customerName: 'ناوی کڕیار', customerPhone: 'تەلەفۆنی کڕیار',
+    liveTables: 'مێزی ئێستا', activeOrders: 'داواکارییە چالاکەکان', unpaidOrders: 'داواکارییە نۆپارەدراوەکان', completedOrders: 'داواکارییە تەواوەکان',
+    mostPopular: 'زۆرترین بەرهەم', weeklySales: 'فرۆشتنی هەفتەیی', monthlySales: 'فرۆشتنی مانگی', salesRange: 'مەودای فرۆشتن',
+    noCustomer: 'کڕیار نەپێدراوە', tableState: 'دۆخی مێز', orderTime: 'کاتی داواکاری', paymentStatus: 'دۆخی پارەدان',
   },
   ar: {
     brand: 'QUBA', subbrand: 'مقهى ومطعم',
@@ -80,8 +108,8 @@ const copy = {
     paidAmount: 'المبلغ المدفوع', cancelOrder: 'إلغاء الطلب', confirmCancelOrder: 'هل تريد إلغاء هذا الطلب؟', newOrder: 'طلب جديد',
     quantity: 'الكمية', noteOrder: 'ملاحظات الطلب', selectTable: 'اختر طاولة',
     chooseProducts: 'اختر المنتجات', createOrder: 'تسجيل الطلب', noProducts: 'لا توجد منتجات للطلب.',
-    expense: 'مصروف', noCategory: 'بدون فئة', loading: 'يرجى الانتظار...', retry: 'إعادة المحاولة', ownerDesk: 'لوحة المالك', close: 'إغلاق', openMenu: 'فتح القائمة', decrease: 'إنقاص', increase: 'زيادة', language: 'اللغة',
-    inactive: 'غير نشط', firebaseMissing: 'Firebase غير مُعدّ', firebaseExplain: 'أضف إعدادات تطبيق Firebase ومعرّف UID للمالك كمتغيرات بيئة، ثم انشر قواعد Firestore المرفقة. لن نعرض أي بيانات تجريبية.',
+    expense: 'مصروف', noCategory: 'بدون فئة', loading: 'يرجى الانتظار...', retry: 'إعادة المحاولة', ownerDesk: 'لوحة المالك', close: 'إغلاق',
+    inactive: 'غير نشط', firebaseMissing: 'Firebase غير مُعدّ', firebaseExplain: 'أضف إعدادات تطبيق Firebase ومعرّف UID للمالك كمتغيرات بيئة.',
     loginTitle: 'مرحباً بعودتك', loginText: 'سجّل الدخول لإدارة يوم قوبا.', email: 'البريد الإلكتروني',
     password: 'كلمة المرور', login: 'تسجيل الدخول', loginError: 'تعذّر تسجيل الدخول. تحقق من بياناتك.',
     logoutError: 'تعذّر تسجيل الخروج. حاول مرة أخرى.',
@@ -93,6 +121,12 @@ const copy = {
     firestoreReadWarning: 'تعذرت قراءة بيانات Firestore؛ السبب:',
     noResults: 'لم يتم العثور على نتائج', filterDate: 'تصفية حسب التاريخ', allOrders: 'كل الطلبات',
     todayLabel: 'اليوم', goodMorning: 'صباح الخير', goodEvening: 'مساء الخير',
+    tableAvailable: 'متاح', tableOccupied: 'مشغول', tableReserved: 'محجوز', tableClosed: 'مغلق',
+    orderNew: 'جديد', orderPreparing: 'قيد التحضير', orderReady: 'جاهز', orderDelivered: 'تم التوصيل', orderPaid: 'مدفوع', orderCancelled: 'ملغي',
+    statusFilter: 'تصفية حسب الحالة', updateStatus: 'تحديث الحالة', customerDetails: 'تفاصيل العميل', customerName: 'اسم العم��ل', customerPhone: 'رقم الهاتف',
+    liveTables: 'الحالات الحالية', activeOrders: 'الطلبات النشطة', unpaidOrders: 'الطلبات غير المدفوعة', completedOrders: 'الطلبات المكتملة',
+    mostPopular: 'الأكثر طلباً', weeklySales: 'المبيعات الأسبوعية', monthlySales: 'المبيعات الشهرية', salesRange: 'نطاق المبيعات',
+    noCustomer: 'لا يوجد عميل', tableState: 'حالة الطاولة', orderTime: 'وقت الطلب', paymentStatus: 'حالة الدفع',
   },
 } as const;
 
@@ -117,19 +151,34 @@ function localized(value: AnyRecord | null | undefined, locale: Locale, prefix =
 function asDate(value: any): Date {
   return value?.toDate ? value.toDate() : new Date(value || 0);
 }
-function dateText(value: any, locale: Locale) {
-  if (!value) return '—';
-  const date = asDate(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
-}
 function todayKey(date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function titleFor(path: string, t: any) {
   const normalizedPath = path === '/products' ? '/menu' : path;
   const item = navItems.find((candidate) => candidate.path === normalizedPath);
   return item ? t[item.key] : t.dashboard;
 }
-
+function tableStatusLabel(status: string | null | undefined, locale: Locale, t: any) {
+  const value = normalizeTableStatus(status, undefined); 
+  const map = {
+    available: t.tableAvailable,
+    occupied: t.tableOccupied,
+    reserved: t.tableReserved,
+    closed: t.tableClosed,
+  };
+  return map[value] || t.tableAvailable;
+}
+function orderStatusLabel(status: string | null | undefined, locale: Locale, t: any) {
+  const value = normalizeOrderStatus(status);
+  const map = {
+    new: t.orderNew,
+    preparing: t.orderPreparing,
+    ready: t.orderReady,
+    delivered: t.orderDelivered,
+    paid: t.orderPaid,
+    cancelled: t.orderCancelled,
+  };
+  return map[value] || t.orderNew;
+}
 function App() {
   const [locale, setLocale] = useState<Locale>('ku');
   const [user, setUser] = useState<User | null>(null);
@@ -231,36 +280,19 @@ function SetupNotice({ locale, onLocale }: { locale: Locale; onLocale: (locale: 
       <span className="gate-icon"><CircleAlert size={23} /></span>
       <p className="eyebrow">QUBA · {t.ownerDesk}</p>
       <h1>{t.firebaseMissing}</h1>
-      <p className="gate-copy">{isKu
-        ? 'پشکنین کردم: ئەم خانانە لە Replit ڕێک نەخراون. ٥ خانە پێویستن بۆ چوونەژوورەوە و داتاکان؛ بەهاکان لە Firebase Web app و UIDی خاوەن وەربگرە.'
-        : 'تحققت من الإعدادات: هذه الحقول غير مضبوطة في Replit. الحقول الخمسة أدناه مطلوبة للدخول والبيانات؛ خذ القيم من إعدادات تطبيق Firebase ومعرّف المالك.'}</p>
+      <p className="gate-copy">{isKu ? 'پشکنین کردم: ئەم خانانە لە Replit ڕێک نەخراون. ٥ خانە پێویستن بۆ چوونەژوورەوە و داتاکان؛ بەهاکان لە Firebase بگرە.' : 'تحققت من الإعدادات: هذه الحقول غير مضبوطة في Replit. الحقول الخمسة أدناه مطلوبة للدخول والبيانات؛ خذ القيم من Firebase.'}</p>
       <h2>{isKu ? 'خانە پێویستەکان' : 'الحقول المطلوبة'}</h2>
       <ul className="setup-vars">
-        {requiredVariables.map(([name, source]) => <li key={name}>
-          <code dir="ltr">{name}</code><span>{source}</span>
-        </li>)}
+        {requiredVariables.map(([name, source]) => <li key={name}><code dir="ltr">{name}</code><span>{source}</span></li>)}
       </ul>
       <h2>{isKu ? 'خانەی هەڵبژاردەیی' : 'حقول اختيارية'}</h2>
       <ul className="setup-vars setup-vars-optional">
-        {optionalVariables.map(([name, source]) => <li key={name}>
-          <code dir="ltr">{name}</code><span>{source}</span>
-        </li>)}
+        {optionalVariables.map(([name, source]) => <li key={name}><code dir="ltr">{name}</code><span>{source}</span></li>)}
       </ul>
-      <section className="setup-instructions">
-        <h2>{isKu ? 'لە مۆبایل لە Replit زیادکردن' : 'إضافتها من الهاتف في Replit'}</h2>
-        <ol>
-          <li>{isKu ? 'پڕۆژەکە بکەرەوە؛ ☰ → Tools → Secrets → + New Secret.' : 'افتح المشروع؛ ☰ ← Tools ← Secrets ← + New Secret.'}</li>
-          <li>{isKu ? 'ناوی خانەکە لێرە کۆپی بکە؛ بەهای Firebase لە خانەی Value دابنێ و پاشەکەوتی بکە. بۆ هەر خانەی پێویست دووبارەی بکەوە.' : 'انسخ اسم الحقل من هنا، وضع قيمة Firebase في Value ثم احفظ. كرر ذلك لكل حقل مطلوب.'}</li>
-          <li>{isKu ? 'پاشان workflow ـی web لە Replit Restart بکە. وشەی نهێنی یان service-account key بەکارمەهێنە.' : 'بعدها أعد تشغيل web workflow في Replit. لا تستخدم كلمة مرور أو service-account key.'}</li>
-        </ol>
-      </section>
       <section className="setup-rules">
         <h2>{isKu ? 'بڵاوکردنەوەی ڕێساکانی Firestore' : 'نشر قواعد Firestore'}</h2>
-        <p>{isKu
-          ? 'لە Firebase Console → Firestore Database → Rules، یاساکانی ئێستا بخوێنەوە. ئەگەر پڕۆژەکە بۆ ئەپەکانی دیکەشە، هەموو یاساکان مەگۆڕە؛ ڕێساکانی QUBA بە پاراستنی یاساکانی تر تێکەڵ بکە، هیچ allow ـێکی فراوان نابێت ڕێگەی بێ‌مەرج بدات. تەنها دوای پشکنین Publish بکە.'
-          : 'في Firebase Console ← Firestore Database ← Rules، راجع القواعد الحالية. إذا كان المشروع يستخدمه تطبيق آخر، لا تستبدل كل القواعد؛ ادمج قواعد QUBA مع الحفاظ على الباقي، وتأكد من عدم وجود قاعدة allow واسعة. انشر بعد المراجعة فقط.'}</p>
+        <p>{isKu ? 'لە Firebase Console → Firestore Database → Rules، یاساکانی ئێستا بخوێنەوە.' : 'في Firebase Console ← Firestore Database ← Rules، راجع القواعد الحالية.'}</p>
       </section>
-      <div className="setup-foot"><span className="status-dot" /> {isKu ? 'هیچ داتای نموونەیی نییە؛ چوونەژوورەوە تەنها بۆ خاوەنە.' : 'لا توجد بيانات تجريبية؛ الدخول للمالك فقط.'}</div>
     </section>
   </main>;
 }
@@ -282,7 +314,7 @@ function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale
         <div className="story-mark"><span /><span /><span /></div>
         <p className="eyebrow">QUBA · {t.ownerDesk}</p>
         <h1>{locale === 'ku' ? 'هەموو ڕۆژێک،' : 'كل يوم،'}<br /><em>{locale === 'ku' ? 'لە یەک شوێنەوە.' : 'في مكان واحد.'}</em></h1>
-        <p>{locale === 'ku' ? 'لە مێزەوە تا پارەدان، بە ڕوونی بەڕێوەی بەرە.' : 'من الطاولة إلى الدفع، إدارة واضحة من البداية للنهاية.'}</p>
+        <p>{locale === 'ku' ? 'لە مێزەوە تا پارەدان، بە ڕوونی بەڕێوەی بەرە.' : 'من الطاولة إلى الدفع، إدارة واضحة من البداية.'}</p>
         <div className="story-line"><span /> {locale === 'ku' ? 'ئامادەیە بۆ ڕۆژێکی باش' : 'جاهز ليوم عمل هادئ'}</div>
       </section>
       <form className="gate-card login-card" onSubmit={submit}>
@@ -293,8 +325,7 @@ function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale
         <label className="field-label" htmlFor="owner-password">{t.password}</label>
         <input id="owner-password" data-testid="input-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
         {authError && <div className="inline-error" role="alert" data-testid="status-auth-error">{authError}</div>}
-        <button className="button button-primary login-submit" type="submit" disabled={busy} data-testid="button-login">{busy && <LoaderCircle className="spin" size={16} />}{t.login}<ArrowUpRight size={17} /></button>
-        <div className="login-foot"><span className="status-dot" /> {locale === 'ku' ? 'تەنها هەژماری خاوەن ڕێگەپێدراوە' : 'الدخول لمالك الحساب فقط'}</div>
+        <button className="button button-primary login-submit" type="submit" disabled={busy} data-testid="button-login">{busy && <LoaderCircle className="spin" size={16} />}{t.login}<ArrowUpRight size={16} /></button>
       </form>
     </div>
   </main>;
@@ -333,10 +364,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
   const pageTitle = titleFor(path, t);
   const content = () => {
     if (loading) return <LoadingContent locale={locale} />;
-    if (path === '/menu' || path === '/products') return <>
-      {error && <FirestoreReadWarning locale={locale} message={error} onRetry={() => window.location.reload()} />}
-      <DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />
-    </>;
+    if (path === '/menu' || path === '/products') return <><DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} /></>;
     if (error) return <ErrorContent locale={locale} message={error} onRetry={() => window.location.reload()} />;
     if (path === '/') return <Dashboard data={snap} locale={locale} t={t} />;
     if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
@@ -350,31 +378,33 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
   };
   return <div className="app-shell" dir="rtl">
     <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
-    <div className="sidebar-head"><Brand locale={locale} /><button className="icon-button sidebar-close" type="button" aria-label={t.close} onClick={() => setMenuOpen(false)}><X size={19} /></button></div>
-      <div className="sidebar-restaurant"><span className="restaurant-avatar">Q</span><div><b>{localized(snap.settings, locale, 'restaurantName') || 'QUBA'}</b><small>{t.owner}</small></div><ChevronDown size={15} /></div>
-      <p className="nav-caption">{locale === 'ku' ? 'بەڕێوەبردن' : 'الإدارة'}</p>
-      <nav className="main-nav">
-        {navItems.map(({ path: itemPath, key, icon: Icon }) => <Link key={itemPath} href={itemPath} className={`nav-link ${path === itemPath ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)} data-testid={`link-nav-${key}`}>
-          <Icon size={18} strokeWidth={1.8} /><span>{t[key]}</span>{key === 'orders' && snap.orders.filter((o: AnyRecord) => o.status !== 'paid' && o.status !== 'cancelled').length > 0 && <i className="nav-count">{snap.orders.filter((o: AnyRecord) => o.status !== 'paid' && o.status !== 'cancelled').length}</i>}
-        </Link>)}
-      </nav>
-      <div className="sidebar-bottom">
-        <div className="side-status"><span className="status-dot" /><span>{locale === 'ku' ? 'هەموو زانیارییەکان پاشەکەوت دەبن' : 'يتم حفظ البيانات تلقائياً'}</span></div>
-        <LocaleSwitch locale={locale} onLocale={setLocale} />
-        <button className="signout-button" type="button" onClick={() => { void handleSignOut(); }} disabled={signingOut} data-testid="button-signout">
-          {signingOut ? <LoaderCircle className="spin" size={16} /> : <LogOut size={16} />}{t.signOut}
-        </button>
+      <div className="sidebar-head"><Brand locale={locale} /><button className="icon-button sidebar-close" type="button" aria-label={t.close} onClick={() => setMenuOpen(false)}><X size={19} /></button></div>
+      <div className="sidebar-content">
+        <div className="sidebar-restaurant"><span className="restaurant-avatar">Q</span><div><b>{localized(snap.settings, locale, 'restaurantName') || 'QUBA'}</b><small>{t.owner}</small></div><ChevronDown size={15} /></div>
+        <p className="nav-caption">{locale === 'ku' ? 'بەڕێوەبردن' : 'الإدارة'}</p>
+        <nav className="main-nav">
+          {navItems.map(({ path: itemPath, key, icon: Icon }) => <Link key={itemPath} href={itemPath} className={`nav-link ${path === itemPath ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
+            <Icon size={18} strokeWidth={1.8} /><span>{t[key]}</span>{key === 'orders' && snap.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(o.status))).length > 0 && <i className="nav-badge" />}
+          </Link>)}
+        </nav>
+        <div className="sidebar-bottom">
+          <div className="side-status"><span className="status-dot" /><span>{locale === 'ku' ? 'هەموو زانیارییەکان پاشەکەوت دەبن' : 'يتم حفظ البيانات تلقائياً'}</span></div>
+          <LocaleSwitch locale={locale} onLocale={setLocale} />
+          <button className="signout-button" type="button" onClick={() => { void handleSignOut(); }} disabled={signingOut} data-testid="button-signout">
+            {signingOut ? <LoaderCircle className="spin" size={16} /> : <LogOut size={16} />}{t.signOut}
+          </button>
+        </div>
       </div>
     </aside>
     {menuOpen && <button className="mobile-scrim" aria-label="Close menu" type="button" onClick={() => setMenuOpen(false)} />}
     <main className="main-area">
       <header className="topbar">
-        <button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen(true)} aria-label={t.openMenu} data-testid="button-open-menu"><Menu size={21} /></button>
+        <button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen(true)} aria-label={t.open} data-testid="button-open-menu"><Menu size={21} /></button>
         <div className="crumb"><span>{t.brand}</span><span className="crumb-slash">/</span><b>{pageTitle}</b></div>
-        <div className="topbar-right"><span className="today-pill"><CalendarDays size={15} />{new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date())}</span><span className="topbar-owner"><span className="owner-dot">Q</span><span>{t.owner}</span></span></div>
+        <div className="topbar-right"><span className="today-pill"><CalendarDays size={15} />{new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date())}</span></div>
       </header>
       <div className="page-wrap">
-        <div className="page-heading"><div><p className="eyebrow page-eyebrow">QUBA · {t.ownerDesk}</p><h1>{pageTitle}</h1></div>{path === '/orders' && <button className="button button-primary" onClick={() => window.dispatchEvent(new Event('open-new-order'))} data-testid="button-new-order"><Plus size={17} />{t.newOrder}</button>}</div>
+        <div className="page-heading"><div><p className="eyebrow page-eyebrow">QUBA · {t.ownerDesk}</p><h1>{pageTitle}</h1></div>{path === '/orders' && <button className="button button-primary" type="button" onClick={() => window.dispatchEvent(new Event('open-new-order'))}>{t.newOrder}</button>}</div>
         {content()}
       </div>
     </main>
@@ -386,17 +416,13 @@ function LoadingScreen({ locale }: { locale: Locale }) {
   return <main className="loading-screen" dir="rtl"><div className="loading-brand"><Brand locale={locale} /></div><div className="loading-pulse"><span /><span /><span /></div><p>{copy[locale].loading}</p></main>;
 }
 function LoadingContent({ locale }: { locale: Locale }) {
-  return <div className="loading-content" aria-label={copy[locale].loading}><div className="skeleton skeleton-title" /><div className="skeleton-row"><div className="skeleton" /><div className="skeleton" /><div className="skeleton" /></div><div className="skeleton skeleton-table" /></div>;
+  return <div className="loading-content" aria-label={copy[locale].loading}><div className="skeleton skeleton-title" /><div className="skeleton-row"><div className="skeleton" /><div className="skeleton" /><div className="skeleton" /></div></div>;
 }
 function ErrorContent({ locale, message, onRetry }: { locale: Locale; message: string; onRetry: () => void }) {
-  return <section className="state-panel error-panel" role="alert" data-testid="status-data-error"><CircleAlert size={24} /><h2>{copy[locale].serverError}</h2><p>{message}</p><button type="button" className="button button-secondary" onClick={onRetry}>{copy[locale].retry}</button></section>;
+  return <section className="state-panel error-panel" role="alert" data-testid="status-data-error"><CircleAlert size={24} /><h2>{copy[locale].serverError}</h2><p>{message}</p><button type="button" className="button button-primary" onClick={onRetry}>{copy[locale].retry}</button></section>;
 }
 function FirestoreReadWarning({ locale, message, onRetry }: { locale: Locale; message: string; onRetry: () => void }) {
-  return <section className="firestore-read-warning" role="alert" data-testid="status-menu-firestore-error">
-    <CircleAlert size={17} />
-    <div><b>{copy[locale].firestoreReadWarning}</b><code dir="ltr">{message}</code></div>
-    <button type="button" className="button button-secondary" onClick={onRetry}>{copy[locale].retry}</button>
-  </section>;
+  return <section className="firestore-read-warning" role="alert" data-testid="status-menu-firestore-error"><CircleAlert size={17} /><div><b>{copy[locale].firestoreReadWarning}</b><code dir="ltr">{message}</code></div><button type="button" className="button button-secondary" onClick={onRetry}>{copy[locale].retry}</button></section>;
 }
 function NotFound({ locale }: { locale: Locale }) {
   return <section className="state-panel"><Search size={24} /><h2>{copy[locale].noResults}</h2></section>;
@@ -408,37 +434,36 @@ function EmptyState({ locale, title, detail }: { locale: Locale; title?: string;
 
 function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {
   const today = todayKey();
-  const todaysOrders = data.orders.filter((o: AnyRecord) => todayKey(asDate(o.createdAt)) === today && o.status !== 'cancelled');
+  const activeOrders = data.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(o.status)));
+  const todaysOrders = data.orders.filter((o: AnyRecord) => todayKey(asDate(o.createdAt)) === today && !['cancelled'].includes(normalizeOrderStatus(o.status)));
   const todaysExpenses = data.expenses.filter((e: AnyRecord) => String(e.date || '').slice(0, 10) === today);
-  const revenue = data.orders.filter((o: AnyRecord) => o.status !== 'cancelled').reduce((sum: number, o: AnyRecord) => sum + (o.payments || []).filter((p: AnyRecord) => todayKey(asDate(p.createdAt || o.createdAt)) === today).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0), 0);
+  const salesToday = data.orders.filter((o: AnyRecord) => normalizeOrderStatus(o.status) !== 'cancelled').reduce((sum: number, o: AnyRecord) => sum + (o.payments || []).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0), 0);
   const expenseTotal = todaysExpenses.reduce((sum: number, e: AnyRecord) => sum + Number(e.amountIqd || 0), 0);
-  const activeOrders = data.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(o.status));
-  const activeTableIds = new Set(activeOrders.map((o: AnyRecord) => o.tableId).filter(Boolean));
+  const occupiedTables = data.tables.filter((table: AnyRecord) => getTableState(table) === 'occupied' || getTableState(table) === 'reserved').length;
+  const totalTables = data.tables.filter((x: AnyRecord) => x.active !== false).length;
   const todayLabel = new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const hour = new Date().getHours();
   return <div className="dashboard-content">
-    <div className="welcome-row"><div><p>{todayLabel}</p><h2>{hour < 17 ? t.goodMorning : t.goodEvening}, <span>{localized(data.settings, locale, 'restaurantName') || t.owner}</span></h2></div><div className="live-indicator"><span className="status-dot" />{locale === 'ku' ? 'ڕاستەوخۆ' : 'مباشر'}</div></div>
+    <div className="welcome-row"><div><p>{todayLabel}</p><h2>{hour < 17 ? t.goodMorning : t.goodEvening}, <span>{localized(data.settings, locale, 'restaurantName') || t.owner}</span></h2></div></div>
     <section className="metric-grid">
-      <MetricCard icon={Banknote} label={t.revenue} value={formatIQD(revenue, locale)} note={`${todaysOrders.length} ${t.ordersCount}`} tone="green" />
-      <MetricCard icon={ClipboardList} label={t.openOrders} value={String(activeOrders.length)} note={locale === 'ku' ? 'داواکارییەکانی ئێستا' : 'تحتاج للمتابعة'} tone="gold" />
-      <MetricCard icon={Utensils} label={t.tablesOccupied} value={`${activeTableIds.size} / ${data.tables.filter((x: AnyRecord) => x.active !== false).length}`} note={locale === 'ku' ? 'مێزی چالاک' : 'طاولة نشطة'} tone="peach" />
+      <MetricCard icon={Banknote} label={t.revenue} value={formatIQD(salesToday, locale)} note={`${todaysOrders.length} ${t.ordersCount}`} tone="green" />
+      <MetricCard icon={ClipboardList} label={t.openOrders} value={String(activeOrders.length)} note={t.activeOrders} tone="blue" />
+      <MetricCard icon={Utensils} label={t.tablesOccupied} value={`${occupiedTables} / ${totalTables}`} note={t.liveTables} tone="amber" />
       <MetricCard icon={ArrowDownLeft} label={t.costs} value={formatIQD(expenseTotal, locale)} note={`${todaysExpenses.length} ${t.expensesCount}`} tone="rose" />
     </section>
     <section className="dashboard-lower">
       <div className="panel recent-panel">
         <div className="panel-heading"><div><span className="panel-kicker">{t.todayFlow}</span><h3>{t.recentOrders}</h3></div><Link href="/orders" className="text-link">{t.viewAll}<ArrowUpRight size={15} /></Link></div>
-        {todaysOrders.length === 0 ? <EmptyState locale={locale} title={t.noOrders} detail={t.startOrder} /> : <div className="order-list">
-          {todaysOrders.slice(0, 6).map((order: AnyRecord) => <OrderCompact key={order.id} order={order} data={data} locale={locale} t={t} />)}
-        </div>}
+        {todaysOrders.length === 0 ? <EmptyState locale={locale} title={t.noOrders} detail={t.startOrder} /> : <div className="order-list">{todaysOrders.slice(0, 6).map((order: AnyRecord) => <OrderCompact key={order.id} order={order} data={data} locale={locale} t={t} />)}</div>}
       </div>
       <aside className="panel service-panel">
-        <div className="panel-heading"><div><span className="panel-kicker">{locale === 'ku' ? 'ئێستا' : 'الآن'}</span><h3>{locale === 'ku' ? 'مێزەکان' : 'الطاولات'}</h3></div><Utensils size={18} /></div>
-        {data.tables.filter((table: AnyRecord) => table.active !== false).length === 0 ? <EmptyState locale={locale} title={locale === 'ku' ? 'مێزێک تۆمار نەکراوە' : 'لم تُسجل طاولات'} /> : <div className="table-mini-grid">
+        <div className="panel-heading"><div><span className="panel-kicker">{locale === 'ku' ? 'ئێستا' : 'الآن'}</span><h3>{locale === 'ku' ? 'مێزەکان' : 'الطاولات'}</h3></div></div>
+        <div className="table-status-grid">
           {data.tables.filter((table: AnyRecord) => table.active !== false).slice(0, 8).map((table: AnyRecord) => {
-            const occupied = activeTableIds.has(table.id);
-            return <div className={`mini-table ${occupied ? 'mini-table-busy' : ''}`} key={table.id}><span className="mini-table-status" /><b>{table.label}</b><small>{occupied ? t.open : (locale === 'ku' ? 'بەتاڵ' : 'متاحة')}</small></div>;
+            const status = getTableState(table);
+            return <div className={`mini-table ${status === 'occupied' || status === 'reserved' ? 'mini-table-busy' : ''}`} key={table.id}><span className="mini-table-status" /><b>{table.label}</b><small>{tableStatusLabel(status, locale, t)}</small></div>;
           })}
-        </div>}
+        </div>
         <Link href="/tables" className="service-link">{locale === 'ku' ? 'بەڕێوەبردنی مێزەکان' : 'إدارة الطاولات'}<ArrowUpRight size={15} /></Link>
       </aside>
     </section>
@@ -446,17 +471,17 @@ function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: an
 }
 
 function MetricCard({ icon: Icon, label, value, note, tone }: { icon: any; label: string; value: string; note: string; tone: string }) {
-  return <article className="metric-card" data-testid={`metric-${tone}`}><div className="metric-top"><span>{label}</span><span className={`metric-icon metric-${tone}`}><Icon size={17} /></span></div><strong>{value}</strong><small>{note}</small></article>;
+  return <article className="metric-card" data-testid={`metric-${tone}`}><div className="metric-top"><span>{label}</span><span className={`metric-icon metric-${tone}`}><Icon size={17} /></span></div><b>{value}</b><small>{note}</small></article>;
 }
 function OrderCompact({ order, data, locale, t }: { order: AnyRecord; data: AnyRecord; locale: Locale; t: any }) {
   const table = data.tables.find((x: AnyRecord) => x.id === order.tableId);
   const paid = (order.payments || []).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0);
-  const status = order.status === 'paid' ? t.paid : order.status === 'cancelled' ? t.cancelled : t.open;
-  return <div className="order-compact" data-testid={`order-summary-${order.id}`}><span className={`order-status-dot ${order.status === 'paid' ? 'is-paid' : order.status === 'cancelled' ? 'is-cancelled' : ''}`} /><div className="compact-order-info"><b>{table?.label || '—'} <span>· {order.items?.length || 0} {t.items}</span></b><small>{dateText(order.createdAt, locale)}</small></div><span className={`status-badge ${order.status === 'paid' ? 'badge-paid' : order.status === 'cancelled' ? 'badge-cancelled' : 'badge-open'}`}>{status}</span><div className="compact-amount"><b>{formatIQD(order.totalIqd, locale)}</b><small>{formatIQD(paid, locale)} {t.paidAmount}</small></div></div>;
+  const status = normalizeOrderStatus(order.status);
+  return <div className="order-compact" data-testid={`order-summary-${order.id}`}><span className={`order-status-dot ${status === 'paid' ? 'is-paid' : status === 'cancelled' ? 'is-cancelled' : 'is-open'}`} /><div><b>{table?.label || t.noCustomer}</b><small>{orderStatusLabel(status, locale, t)} · {formatIQD(order.totalIqd, locale)}</small></div><span className="mini-total">{formatIQD(paid, locale)}</span></div>;
 }
 
 const fieldText = (key: string, t: any) => {
-  const fields: Record<string, string> = { name: t.name, nameKu: t.nameKu, nameAr: t.nameAr, sortOrder: t.sortOrder, priceIqd: t.price, categoryId: t.category, label: t.label, seats: t.seats, phone: t.phone, notes: t.notes, titleKu: t.titleKu, titleAr: t.titleAr, category: t.expenseCategory, amountIqd: t.amount, date: t.date };
+  const fields: Record<string, string> = { name: t.name, nameKu: t.nameKu, nameAr: t.nameAr, sortOrder: t.sortOrder, priceIqd: t.price, categoryId: t.category, label: t.label, seats: t.seats, phone: t.phone, notes: t.notes, titleKu: t.titleKu, titleAr: t.titleAr, amountIqd: t.amount, status: t.status };
   return fields[key] || key;
 };
 function recordActionError(error: unknown, t: any) {
@@ -469,7 +494,7 @@ function recordActionError(error: unknown, t: any) {
 const schemas: Record<RecordKind, string[]> = {
   categories: ['nameKu', 'nameAr', 'sortOrder'],
   products: ['nameKu', 'nameAr', 'categoryId', 'priceIqd', 'active'],
-  tables: ['label', 'seats', 'active'],
+  tables: ['label', 'seats', 'status', 'active'],
   customers: ['name', 'phone', 'notes'],
   expenses: ['titleKu', 'titleAr', 'category', 'amountIqd', 'date', 'notes'],
 };
@@ -489,7 +514,6 @@ function DataPage({ kind, records, categories, locale, t, actions, notify }: { k
   const [formRecord, setFormRecord] = useState<AnyRecord | null>(null);
   const [deleting, setDeleting] = useState<AnyRecord | null>(null);
   const [busy, setBusy] = useState(false);
-  const titleField = kind === 'customers' ? 'name' : kind === 'expenses' ? 'titleKu' : kind === 'tables' ? 'label' : 'nameKu';
   const filtered = records.filter((record) => JSON.stringify(record).toLowerCase().includes(search.toLowerCase()));
   const fields = schemas[kind];
   async function save(values: AnyRecord) {
@@ -497,8 +521,11 @@ function DataPage({ kind, records, categories, locale, t, actions, notify }: { k
     try {
       const payload = { ...values };
       delete payload.id;
+      if (kind === 'tables') {
+        payload.status = normalizeTableStatus(payload.status, payload.active);
+      }
       if (formRecord?.id) await actions.updateRecord(kind, formRecord.id, payload);
-      else await actions.createRecord(kind, { ...(kind === 'categories' ? { sortOrder: 0 } : {}), ...payload });
+      else await actions.createRecord(kind, { ...(kind === 'categories' ? { sortOrder: 0 } : {}), ...(kind === 'tables' ? { status: 'available' } : {}), ...payload });
       setFormRecord(null); notify(t.saved);
     } catch (error) { notify(recordActionError(error, t)); }
     finally { setBusy(false); }
@@ -511,20 +538,15 @@ function DataPage({ kind, records, categories, locale, t, actions, notify }: { k
     finally { setBusy(false); }
   }
   return <>
-    <div className="list-toolbar"><label className="search-box"><Search size={17} /><input data-testid={`input-search-${kind}`} placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} /></label><button type="button" className="button button-primary" onClick={() => setFormRecord({})} data-testid={`button-add-${kind}`}><Plus size={17} />{kind === 'products' ? t.addItem : t.add}</button></div>
-    {filtered.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : undefined} /> : <div className="data-table-wrap"><table className="data-table"><thead><tr>{fields.map((field) => <th key={field}>{fieldText(field, t)}</th>)}<th>{t.actions}</th></tr></thead><tbody>
-      {filtered.map((record) => <tr key={record.id} data-testid={`row-${kind}-${record.id}`}>
-        {fields.map((field) => <td key={field}>{field === 'active' ? <span className={`status-badge ${record.active === false ? 'badge-cancelled' : 'badge-paid'}`}>{record.active === false ? t.inactive : t.active}</span> : field === 'categoryId' ? productCategoryLabel(record.categoryId, categories || [], locale, t) : field === 'priceIqd' || field === 'amountIqd' ? formatIQD(Number(record[field]), locale) : field === 'date' ? dateText(record[field], locale) : <span className={field === 'notes' ? 'muted-cell' : ''}>{(field === 'nameKu' && (kind === 'products' || kind === 'categories')) || (field === 'titleKu' && kind === 'expenses') ? localized(record, locale, field === 'titleKu' ? 'title' : 'name') : record[field] || '—'}</span>}</td>)}
-        <td><div className="row-actions"><button className="icon-button" type="button" title={t.edit} aria-label={t.edit} onClick={() => setFormRecord(record)} data-testid={`button-edit-${kind}-${record.id}`}><Pencil size={15} /></button><button className="icon-button danger-icon" type="button" title={t.delete} aria-label={t.delete} onClick={() => setDeleting(record)} data-testid={`button-delete-${kind}-${record.id}`}><Trash2 size={15} /></button></div></td>
-      </tr>)}
-    </tbody></table></div>}
+    <div className="list-toolbar"><label className="search-box"><Search size={17} /><input data-testid={`input-search-${kind}`} placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} /></label>{kind === 'tables' && <button className="button button-primary" type="button" onClick={() => setFormRecord({ status: 'available', active: true })}>{t.add}</button>}</div>
+    {filtered.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : undefined} /> : <div className="data-table-wrap"><table className="data-table"><thead><tr>{fields.map((field) => <th key={field}>{fieldText(field, t)}</th>)}<th>{t.actions}</th></tr></thead><tbody>{filtered.map((record) => <tr key={record.id} data-testid={`row-${kind}-${record.id}`}>{fields.map((field) => <td key={field}>{field === 'active' ? <span className={`status-badge ${record.active === false ? 'badge-cancelled' : 'badge-paid'}`}>{record.active === false ? t.inactive : t.active}</span> : field === 'status' ? <span className="status-badge badge-paid">{tableStatusLabel(record.status || (record.active === false ? 'closed' : 'available'), locale, t)}</span> : (record[field] ?? '')}</td>)}<td><div className="row-actions"><button className="icon-button" type="button" title={t.edit} aria-label={t.edit} onClick={() => setFormRecord(record)} data-testid={`button-edit-${kind}-${record.id}`}><Pencil size={15} /></button><button className="icon-button" type="button" title={t.delete} aria-label={t.delete} onClick={() => setDeleting(record)} data-testid={`button-delete-${kind}-${record.id}`}><Trash2 size={15} /></button></div></td></tr>)}</tbody></table></div>}
     {formRecord && <RecordDialog kind={kind} record={formRecord} categories={categories || []} locale={locale} t={t} busy={busy} onClose={() => setFormRecord(null)} onSave={save} />}
     {deleting && <ConfirmDialog t={t} busy={busy} onClose={() => setDeleting(null)} onConfirm={remove} />}
   </>;
 }
 
-function RecordDialog({ kind, record, categories, locale, t, busy, onClose, onSave }: { kind: RecordKind; record: AnyRecord; categories: AnyRecord[]; locale: Locale; t: any; busy: boolean; onClose: () => void; onSave: (data: AnyRecord) => void }) {
-  const [values, setValues] = useState<AnyRecord>(() => ({ ...record, ...(record.id ? {} : { active: true, ...(kind === 'expenses' ? { date: todayKey() } : {}) }) }));
+function RecordDialog({ kind, record, categories, locale, t, busy, onClose, onSave }: { kind: RecordKind; record: AnyRecord; categories: AnyRecord[]; locale: Locale; t: any; busy: boolean; onClose: () => void; onSave: (values: AnyRecord) => Promise<void> | void }) {
+  const [values, setValues] = useState<AnyRecord>(() => ({ ...record, ...(record.id ? {} : { active: true, status: 'available', ...(kind === 'expenses' ? { date: todayKey() } : {}) }) }));
   const fields = schemas[kind];
   const title = record.id ? t.edit : t.add;
   function submit(event: FormEvent) {
@@ -534,25 +556,20 @@ function RecordDialog({ kind, record, categories, locale, t, busy, onClose, onSa
       if (key === 'sortOrder' && payload[key] === '') payload[key] = 0;
       else if (payload[key] !== undefined && payload[key] !== '') payload[key] = Number(payload[key]);
     });
-    onSave(payload);
+    void onSave(payload);
   }
   return <Modal title={title} onClose={onClose}><form onSubmit={submit} className="dialog-form">
-    <div className="form-grid">{fields.map((field) => <label key={field} className={`form-field ${field === 'notes' ? 'field-wide' : ''}`}><span>{fieldText(field, t)}</span>
-      {field === 'categoryId' ? <select required value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })}><option value="">{t.category}</option>{PRODUCT_CATEGORY_PRESETS.map((category) => <option value={category.id} key={category.id}>{t[category.labelKey]}</option>)}{categories.map((category) => <option value={category.id} key={category.id}>{localized(category, locale)}</option>)}</select>
-        : field === 'active' ? <span className="check-line"><input type="checkbox" checked={values.active !== false} onChange={(e) => setValues({ ...values, active: e.target.checked })} />{t.active}</span>
-          : field === 'notes' ? <textarea value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })} rows={3} />
-             : <input required={['name', 'nameKu', 'nameAr', 'titleKu', 'titleAr', 'priceIqd', 'label', 'seats', 'amountIqd'].includes(field)} type={field === 'priceIqd' || field === 'amountIqd' || field === 'seats' || field === 'sortOrder' ? 'number' : field === 'date' ? 'date' : field === 'phone' ? 'tel' : 'text'} min={field === 'seats' ? 1 : field === 'priceIqd' || field === 'amountIqd' || field === 'sortOrder' ? 0 : undefined} step="1" value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })} />}
-    </label>)}</div>
-    <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy} data-testid="button-save-record">{busy && <LoaderCircle className="spin" size={15} />}{t.save}</button></div>
+    <div className="form-grid">{fields.map((field) => <label key={field} className={`form-field ${field === 'notes' ? 'field-wide' : ''}`}><span>{fieldText(field, t)}</span>{field === 'categoryId' ? <select required value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })}><option value="">{t.category}</option>{categories.map((category) => <option key={category.id} value={category.id}>{localized(category, locale)}</option>)}</select> : field === 'active' ? <span className="check-line"><input type="checkbox" checked={values.active !== false} onChange={(e) => setValues({ ...values, active: e.target.checked })} />{t.active}</span> : field === 'status' ? <select value={values.status || 'available'} onChange={(e) => setValues({ ...values, status: e.target.value, active: e.target.value !== 'closed' })}><option value="available">{t.tableAvailable}</option><option value="occupied">{t.tableOccupied}</option><option value="reserved">{t.tableReserved}</option><option value="closed">{t.tableClosed}</option></select> : field === 'notes' ? <textarea value={values[field] || ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })} rows={3} /> : <input required={['name', 'nameKu', 'nameAr', 'titleKu', 'titleAr', 'priceIqd', 'label', 'seats', 'amountIqd'].includes(field)} type={field === 'priceIqd' || field === 'amountIqd' ? 'number' : 'text'} value={values[field] ?? ''} onChange={(e) => setValues({ ...values, [field]: e.target.value })} />}</label>)}</div>
+    <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy} data-testid="button-save-record" type="submit">{busy && <LoaderCircle className="spin" size={15} />}{t.save}</button></div>
   </form></Modal>;
 }
 
 function ConfirmDialog({ t, busy, onClose, onConfirm, prompt = t.confirmDelete, title = t.delete }: { t: any; busy: boolean; onClose: () => void; onConfirm: () => void; prompt?: string; title?: string }) {
-  return <Modal title={title} onClose={onClose}><div className="confirm-content"><span className="confirm-icon"><Trash2 size={20} /></span><p>{prompt}</p></div><div className="dialog-actions"><button className="button button-quiet" onClick={onClose}>{t.no}</button><button className="button button-danger" disabled={busy} onClick={onConfirm} data-testid="button-confirm-delete">{t.yesDelete}</button></div></Modal>;
+  return <Modal title={title} onClose={onClose}><div className="confirm-content"><span className="confirm-icon"><Trash2 size={20} /></span><p>{prompt}</p></div><div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy} onClick={onConfirm}>{t.yesDelete}</button></div></Modal>;
 }
 function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   useEffect(() => { const handle = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', handle); return () => window.removeEventListener('keydown', handle); }, [onClose]);
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><section className="modal-card" role="dialog" aria-modal="true" aria-label={title}><header className="modal-head"><h2>{title}</h2><button className="icon-button" onClick={onClose} type="button" aria-label="Close"><X size={18} /></button></header>{children}</section></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><section className="modal-card" role="dialog" aria-modal="true"><div className="modal-head"><h3>{title}</h3><button className="icon-button" type="button" aria-label="Close" onClick={onClose}><X size={17} /></button></div>{children}</section></div>;
 }
 
 function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
@@ -563,11 +580,11 @@ function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [newOrder, setNewOrder] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => { const open = () => setNewOrder(true); window.addEventListener('open-new-order', open); return () => window.removeEventListener('open-new-order', open); }, []);
-  const orders = data.orders.filter((o: AnyRecord) => filter === 'all' || o.status === filter).filter((o: AnyRecord) => JSON.stringify(o).toLowerCase().includes(search.toLowerCase()));
+  const orders = data.orders.filter((o: AnyRecord) => (filter === 'all' || normalizeOrderStatus(o.status) === filter)).filter((o: AnyRecord) => JSON.stringify(o).toLowerCase().includes(search.toLowerCase()));
   async function pay(amount: number, method: string) {
     if (!paymentOrder) return;
     setBusy(true);
-    try { await actions.addPayment(paymentOrder.id, { amountIqd: amount, method, createdAt: new Date() }); setPaymentOrder(null); notify(t.saved); }
+    try { await actions.addPayment(paymentOrder.id, { amountIqd: amount, method: method as any }); setPaymentOrder(null); notify(t.saved); }
     catch { notify(t.serverError); } finally { setBusy(false); }
   }
   async function cancel(order: AnyRecord) {
@@ -575,28 +592,35 @@ function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     try { await actions.cancelOrder(order.id); notify(t.saved); } catch { notify(t.serverError); } finally { setBusy(false); }
   }
   return <>
-    <div className="list-toolbar orders-toolbar"><label className="search-box"><Search size={17} /><input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-orders" /></label><div className="filter-pills">{[['all', t.all], ['open', t.open], ['paid', t.paid], ['cancelled', t.cancelled]].map(([key, label]) => <button key={key} className={filter === key ? 'filter-active' : ''} onClick={() => setFilter(key)} data-testid={`filter-orders-${key}`}>{label}</button>)}</div><button className="button button-primary mobile-order-add" onClick={() => setNewOrder(true)}><Plus size={16} />{t.newOrder}</button></div>
-    {orders.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : t.noOrders} detail={search ? '' : t.startOrder} /> : <div className="order-cards">
-      {orders.map((order: AnyRecord) => <OrderCard key={order.id} order={order} data={data} locale={locale} t={t} onPay={() => setPaymentOrder(order)} onCancel={() => setCancelPrompt(order)} busy={busy} />)}
-    </div>}
+    <div className="list-toolbar orders-toolbar"><label className="search-box"><Search size={17} /><input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-orders" /></label><select value={filter} onChange={(e) => setFilter(e.target.value)} data-testid="select-order-filter"><option value="all">{t.all}</option><option value="new">{t.orderNew}</option><option value="preparing">{t.orderPreparing}</option><option value="ready">{t.orderReady}</option><option value="delivered">{t.orderDelivered}</option><option value="paid">{t.orderPaid}</option><option value="cancelled">{t.orderCancelled}</option></select></div>
+    {orders.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : t.noOrders} detail={search ? '' : t.startOrder} /> : <div className="order-cards">{orders.map((order: AnyRecord) => <OrderCard key={order.id} order={order} data={data} locale={locale} t={t} onPay={() => setPaymentOrder(order)} onCancel={() => setCancelPrompt(order)} busy={busy} actions={actions} />)}</div>}
     {paymentOrder && <PaymentDialog order={paymentOrder} locale={locale} t={t} busy={busy} onClose={() => setPaymentOrder(null)} onPay={pay} />}
     {cancelPrompt && <ConfirmDialog t={t} busy={busy} title={t.cancelOrder} prompt={t.confirmCancelOrder} onClose={() => setCancelPrompt(null)} onConfirm={async () => { await cancel(cancelPrompt); setCancelPrompt(null); }} />}
-    {newOrder && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} onClose={() => setNewOrder(false)} onCreate={async (payload) => {
-      setBusy(true);
-      try { await actions.createOrder(payload); setNewOrder(false); notify(t.saved); }
-      catch { notify(t.serverError); } finally { setBusy(false); }
-    }} />}
+    {newOrder && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} onClose={() => setNewOrder(false)} onCreate={async (payload) => { setBusy(true); try { await actions.createOrder(payload); setNewOrder(false); notify(t.saved); } catch { notify(t.serverError); } finally { setBusy(false); } }} />}
   </>;
 }
-function OrderCard({ order, data, locale, t, onPay, onCancel, busy }: { order: AnyRecord; data: AnyRecord; locale: Locale; t: any; onPay: () => void; onCancel: () => void; busy: boolean }) {
+
+function OrderCard({ order, data, locale, t, onPay, onCancel, busy, actions }: { order: AnyRecord; data: AnyRecord; locale: Locale; t: any; onPay: () => void; onCancel: () => void; busy: boolean; actions: AnyRecord }) {
   const table = data.tables.find((x: AnyRecord) => x.id === order.tableId);
   const paid = (order.payments || []).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0);
-  const statusLabel = order.status === 'paid' ? t.paid : order.status === 'cancelled' ? t.cancelled : t.open;
-  return <article className="order-card" data-testid={`card-order-${order.id}`}><div className="order-card-top"><div className="order-card-meta"><span className={`status-badge ${order.status === 'paid' ? 'badge-paid' : order.status === 'cancelled' ? 'badge-cancelled' : 'badge-open'}`}>{statusLabel}</span><span className="order-date">{dateText(order.createdAt, locale)}</span></div><span className="order-table-tag"><Utensils size={14} />{table?.label || '—'}</span></div>
-    <div className="order-lines">{(order.items || []).map((item: AnyRecord, i: number) => <div key={`${item.productId}-${i}`}><span>{localized(item, locale)} <small>× {item.quantity}</small></span><b>{formatIQD(item.unitPriceIqd * item.quantity, locale)}</b></div>)}</div>
-    {order.notes && <p className="order-note">{order.notes}</p>}
-    <div className="order-card-bottom"><div><small>{t.total}</small><b>{formatIQD(order.totalIqd, locale)}</b><small className="paid-note">{t.paidAmount}: {formatIQD(paid, locale)} · {t.pending}: {formatIQD(Math.max(0, order.totalIqd - paid), locale)}</small></div>
-      {order.status !== 'paid' && order.status !== 'cancelled' && <div className="order-actions"><button className="button button-secondary small-button" onClick={onPay} data-testid={`button-payment-${order.id}`}><CreditCard size={15} />{t.addPayment}</button><button className="icon-button danger-icon" disabled={busy} title={t.cancelOrder} onClick={onCancel} data-testid={`button-cancel-order-${order.id}`}><X size={17} /></button></div>}
+  const status = normalizeOrderStatus(order.status);
+  const customer = data.customers.find((c: AnyRecord) => c.id === order.customerId);
+  const nextStatusOptions = ['new', 'preparing', 'ready', 'delivered', 'paid', 'cancelled'];
+  return <article className="order-card" data-testid={`card-order-${order.id}`}>
+    <div className="order-card-top"><div className="order-card-meta"><span className={`status-badge ${status === 'paid' ? 'badge-paid' : status === 'cancelled' ? 'badge-cancelled' : 'badge-open'}`}>{orderStatusLabel(status, locale, t)}</span><b>{table?.label || t.table}</b></div><small>{dateText(order.createdAt, locale)}</small></div>
+    <div className="order-card-body">
+      <div className="customer-callout"><strong>{customer?.name || t.noCustomer}</strong><small>{customer?.phone || ''}</small></div>
+      <div className="order-lines">{(order.items || []).map((item: AnyRecord, i: number) => <div key={`${item.productId}-${i}`}><span>{localized(item, locale)} <small>× {item.quantity}</small></span><b>{formatIQD(item.unitPriceIqd * item.quantity, locale)}</b></div>)}</div>
+      {order.notes && <p className="order-note">{order.notes}</p>}
+      <div className="order-card-bottom"><div><small>{t.total}</small><b>{formatIQD(order.totalIqd, locale)}</b><small className="paid-note">{t.paidAmount}: {formatIQD(paid, locale)}</small></div>
+      <div className="order-actions">
+        <select value={status} onChange={(e) => { void actions.updateOrderStatus(order.id, e.target.value as OrderStatus); }}>
+          {nextStatusOptions.map((option) => <option value={option} key={option}>{orderStatusLabel(option, locale, t)}</option>)}
+        </select>
+        {status !== 'paid' && status !== 'cancelled' && <button className="button button-secondary small-button" onClick={onPay} data-testid={`button-payment-${order.id}`}>{t.addPayment}</button>}
+        {status !== 'paid' && status !== 'cancelled' && <button className="button button-quiet small-button" onClick={onCancel} data-testid={`button-cancel-${order.id}`}>{t.cancelOrder}</button>}
+      </div>
+      </div>
     </div>
   </article>;
 }
@@ -612,15 +636,15 @@ function NewOrderDialog({ data, locale, t, busy, onClose, onCreate }: { data: An
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!tableId || !selectedItems.length) return;
-    onCreate({ tableId, customerId: customerId || null, items: selectedItems, notes, status: 'open', totalIqd: total, payments: [], createdAt: new Date() });
+    onCreate({ tableId, customerId: customerId || null, items: selectedItems, notes, status: 'new' });
   }
   return <Modal title={t.newOrder} onClose={onClose}><form className="dialog-form" onSubmit={submit}>
-    <div className="form-grid"><label className="form-field"><span>{t.selectTable}</span><select required value={tableId} onChange={(e) => setTableId(e.target.value)}><option value="">{t.selectTable}</option>{data.tables.filter((x: AnyRecord) => x.active !== false).map((table: AnyRecord) => <option key={table.id} value={table.id}>{table.label} · {table.seats}</option>)}</select></label><label className="form-field"><span>{t.customer}</span><select value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">—</option>{data.customers.map((customer: AnyRecord) => <option key={customer.id} value={customer.id}>{customer.name || customer.phone}</option>)}</select></label></div>
+    <div className="form-grid"><label className="form-field"><span>{t.selectTable}</span><select required value={tableId} onChange={(e) => setTableId(e.target.value)}><option value="">{t.selectTable}</option>{data.tables.filter((table: AnyRecord) => table.active !== false).map((table: AnyRecord) => <option key={table.id} value={table.id}>{table.label}</option>)}</select></label><label className="form-field"><span>{t.customer}</span><select value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">{t.customer}</option>{data.customers.map((customer: AnyRecord) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label></div>
     <div className="product-picker-head"><b>{t.chooseProducts}</b><span>{selectedItems.length} {t.items}</span></div>
-    {products.length === 0 ? <EmptyState locale={locale} title={t.noProducts} /> : <div className="product-picker">{products.map((product: AnyRecord) => <div className="picker-product" key={product.id}><div><b>{localized(product, locale)}</b><small>{formatIQD(product.priceIqd, locale)}</small></div><div className="quantity-stepper"><button type="button" aria-label="Decrease" onClick={() => setQuantities({ ...quantities, [product.id]: Math.max(0, (quantities[product.id] || 0) - 1) })}>−</button><span>{quantities[product.id] || 0}</span><button type="button" aria-label="Increase" onClick={() => setQuantities({ ...quantities, [product.id]: (quantities[product.id] || 0) + 1 })}>+</button></div></div>)}</div>}
+    {products.length === 0 ? <EmptyState locale={locale} title={t.noProducts} /> : <div className="product-picker">{products.map((product: AnyRecord) => <div className="picker-product" key={product.id}><div><b>{localized(product, locale)}</b><small>{formatIQD(product.priceIqd, locale)}</small></div><div className="qty-control"><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: Math.max(0, (prev[product.id] || 0) - 1) }))}>-</button><span>{quantities[product.id] || 0}</span><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }))}>+</button></div></div>)}</div>}
     <label className="form-field"><span>{t.noteOrder}</span><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
     <div className="order-total"><span>{t.total}</span><b>{formatIQD(total, locale)}</b></div>
-    <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy || !tableId || !selectedItems.length} data-testid="button-create-order">{busy && <LoaderCircle className="spin" size={15} />}{t.createOrder}</button></div>
+    <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy || !tableId || !selectedItems.length} type="submit">{t.createOrder}</button></div>
   </form></Modal>;
 }
 function PaymentDialog({ order, locale, t, busy, onClose, onPay }: { order: AnyRecord; locale: Locale; t: any; busy: boolean; onClose: () => void; onPay: (amount: number, method: string) => void }) {
@@ -632,39 +656,45 @@ function PaymentDialog({ order, locale, t, busy, onClose, onPay }: { order: AnyR
     <div className="payment-summary"><small>{t.pending}</small><strong>{formatIQD(remaining, locale)}</strong></div>
     <label className="form-field"><span>{t.amount}</span><input required type="number" min="1" max={remaining} step="1" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
     <label className="form-field"><span>{t.paymentMethod}</span><select value={method} onChange={(e) => setMethod(e.target.value)}><option value="cash">{t.cash}</option><option value="card">{t.card}</option><option value="other">{t.other}</option></select></label>
-    <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy || !Number.isSafeInteger(Number(amount)) || Number(amount) <= 0 || Number(amount) > remaining} data-testid="button-submit-payment">{busy && <LoaderCircle className="spin" size={15} />}{t.addPayment}</button></div>
+    <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy || !Number(amount) || Number(amount) > remaining} type="submit">{t.save}</button></div>
   </form></Modal>;
 }
 
 function Reports({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {
   const [from, setFrom] = useState(todayKey(new Date(Date.now() - 6 * 86400000)));
   const [to, setTo] = useState(todayKey());
-  const orders = data.orders.filter((order: AnyRecord) => {
+  const inRangeOrders = data.orders.filter((order: AnyRecord) => {
     const key = todayKey(asDate(order.createdAt));
-    return key >= from && key <= to && order.status !== 'cancelled';
+    return key >= from && key <= to;
   });
-  const expenses = data.expenses.filter((expense: AnyRecord) => String(expense.date || '').slice(0, 10) >= from && String(expense.date || '').slice(0, 10) <= to);
-  const expenseTotal = expenses.reduce((sum: number, expense: AnyRecord) => sum + Number(expense.amountIqd || 0), 0);
   const salesByDay = useMemo(() => {
     const map: Record<string, number> = {};
-    data.orders.filter((order: AnyRecord) => order.status !== 'cancelled').forEach((order: AnyRecord) => {
+    inRangeOrders.forEach((order: AnyRecord) => {
       (order.payments || []).forEach((payment: AnyRecord) => {
         const key = todayKey(asDate(payment.createdAt || order.createdAt));
         if (key >= from && key <= to) map[key] = (map[key] || 0) + Number(payment.amountIqd || 0);
       });
     });
     return map;
-  }, [data.orders, from, to]);
-  const sales = Object.values(salesByDay).reduce((sum, amount) => sum + amount, 0);
-  const days = Object.keys(salesByDay).sort();
-  const maxValue = Math.max(1, ...days.map((day) => salesByDay[day]));
+  }, [inRangeOrders, from, to]);
+  const totalSales = Object.values(salesByDay).reduce((sum, amount) => sum + amount, 0);
+  const unpaidOrders = inRangeOrders.filter((order: AnyRecord) => normalizeOrderStatus(order.status) !== 'paid' && normalizeOrderStatus(order.status) !== 'cancelled' && Number(order.totalIqd || 0) > (order.payments || []).reduce((sum: number, p: AnyRecord) => sum + Number(p.amountIqd || 0), 0));
+  const completedOrders = inRangeOrders.filter((order: AnyRecord) => ['paid', 'delivered'].includes(normalizeOrderStatus(order.status)));
+  const cancelledOrders = inRangeOrders.filter((order: AnyRecord) => normalizeOrderStatus(order.status) === 'cancelled');
+  const productCounts: Record<string, number> = {};
+  inRangeOrders.forEach((order: AnyRecord) => {
+    (order.items || []).forEach((item: AnyRecord) => {
+      const key = item.nameKu || item.nameAr || item.productId;
+      productCounts[key] = (productCounts[key] || 0) + Number(item.quantity || 0);
+    });
+  });
+  const topProducts = Object.entries(productCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const reportOrders = inRangeOrders.filter((order: AnyRecord) => normalizeOrderStatus(order.status) !== 'cancelled');
   return <div className="reports-content">
-    <div className="report-filters"><span><CalendarDays size={16} />{t.filterDate}</span><label>{t.from}<input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} data-testid="input-report-from" /></label><label>{t.to}<input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} data-testid="input-report-to" /></label></div>
-    <div className="report-metrics"><MetricCard icon={ArrowUpRight} label={t.revenue} value={formatIQD(sales, locale)} note={`${orders.length} ${t.ordersCount}`} tone="green" /><MetricCard icon={Wallet} label={t.costs} value={formatIQD(expenseTotal, locale)} note={`${expenses.length} ${t.expensesCount}`} tone="rose" /><MetricCard icon={Activity} label={t.net} value={formatIQD(sales - expenseTotal, locale)} note={`${from} — ${to}`} tone="gold" /></div>
-    <section className="panel report-chart"><div className="panel-heading"><div><span className="panel-kicker">{t.reportTitle}</span><h3>{t.revenue}</h3></div><span className="report-range">{from} — {to}</span></div>
-      {days.length === 0 ? <EmptyState locale={locale} /> : <div className="bar-chart">{days.map((day) => <div key={day} className="bar-column"><span className="bar-value">{formatIQD(salesByDay[day], locale)}</span><div className="bar-track"><i style={{ height: `${Math.max(4, (salesByDay[day] / maxValue) * 100)}%` }} /></div><small>{new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { day: 'numeric', month: 'short' }).format(new Date(`${day}T12:00:00`))}</small></div>)}</div>}
-    </section>
-    <section className="panel report-order-table"><div className="panel-heading"><div><span className="panel-kicker">{t.reportTitle}</span><h3>{t.allOrders}</h3></div><span className="count-tag">{orders.length}</span></div>{orders.length === 0 ? <EmptyState locale={locale} /> : <div className="data-table-wrap"><table className="data-table"><thead><tr><th>{t.created}</th><th>{t.table}</th><th>{t.total}</th><th>{t.paid}</th></tr></thead><tbody>{orders.map((order: AnyRecord) => <tr key={order.id}><td>{dateText(order.createdAt, locale)}</td><td>{data.tables.find((table: AnyRecord) => table.id === order.tableId)?.label || '—'}</td><td>{formatIQD(order.totalIqd, locale)}</td><td>{formatIQD((order.payments || []).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0), locale)}</td></tr>)}</tbody></table></div>}</section>
+    <div className="report-filters"><span><CalendarDays size={16} />{t.filterDate}</span><label>{t.from}<input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label><label>{t.to}<input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label></div>
+    <div className="report-metrics"><MetricCard icon={ArrowUpRight} label={t.revenue} value={formatIQD(totalSales, locale)} note={`${reportOrders.length} ${t.ordersCount}`} tone="green" /><MetricCard icon={ClipboardList} label={t.unpaidOrders} value={String(unpaidOrders.length)} note={t.openOrders} tone="blue" /><MetricCard icon={CreditCard} label={t.completedOrders} value={String(completedOrders.length)} note={t.paid} tone="amber" /><MetricCard icon={CircleAlert} label={t.cancelled} value={String(cancelledOrders.length)} note={t.orderCancelled} tone="rose" /></div>
+    <section className="panel report-chart"><div className="panel-heading"><div><span className="panel-kicker">{t.reportTitle}</span><h3>{t.revenue}</h3></div><span className="report-range">{from} → {to}</span></div>{Object.keys(salesByDay).length === 0 ? <EmptyState locale={locale} /> : <div className="bar-chart">{Object.entries(salesByDay).sort(([a], [b]) => a.localeCompare(b)).map(([day, amount]) => <div key={day} className="bar-column"><span className="bar-value">{formatIQD(amount, locale)}</span><span className="bar-fill" style={{ height: `${Math.max(12, (amount / Math.max(...Object.values(salesByDay), 1)) * 100)}%` }} /><small>{day.slice(5)}</small></div>)}</div>}</section>
+    <section className="panel report-order-table"><div className="panel-heading"><div><span className="panel-kicker">{t.mostPopular}</span><h3>{t.products}</h3></div></div><ul className="popular-list">{topProducts.length === 0 ? <li>{t.noResults}</li> : topProducts.map(([name, count], index) => <li key={`${name}-${index}`}><span>{name}</span><b>{count}</b></li>)}</ul></section>
   </div>;
 }
 
@@ -677,14 +707,7 @@ function SettingsPage({ settings, locale, onLocale, actions, notify, t }: { sett
     try { await actions.saveSettings(values); onLocale(values.defaultLocale); notify(t.saved); }
     catch { notify(t.serverError); } finally { setBusy(false); }
   }
-  return <div className="settings-layout"><section className="panel settings-panel"><div className="panel-heading"><div><span className="panel-kicker">QUBA · {t.restaurant}</span><h3>{t.restaurant}</h3></div><BriefcaseBusiness size={18} /></div><form className="settings-form" onSubmit={save}>
-    <label className="form-field"><span>{t.nameKu}</span><input value={values.restaurantNameKu} onChange={(e) => setValues({ ...values, restaurantNameKu: e.target.value })} /></label>
-    <label className="form-field"><span>{t.nameAr}</span><input value={values.restaurantNameAr} onChange={(e) => setValues({ ...values, restaurantNameAr: e.target.value })} /></label>
-    <label className="form-field"><span>{t.defaultLanguage}</span><select value={values.defaultLocale} onChange={(e) => setValues({ ...values, defaultLocale: e.target.value })}><option value="ku">کوردی</option><option value="ar">العربية</option></select></label>
-    <div className="settings-note"><Globe2 size={17} /><span>{locale === 'ku' ? 'هەردوو زمانەکە بە ئاراستەی ڕاست بۆ چەپ نیشان دەدرێن.' : 'تُعرض اللغتان باتجاه الكتابة من اليمين إلى اليسار.'}</span></div>
-    <button className="button button-primary" type="submit" disabled={busy} data-testid="button-save-settings">{busy && <LoaderCircle className="spin" size={15} />}{t.saveSettings}</button>
-  </form></section>
-   <aside className="panel settings-aside"><span className="settings-emblem"><Coffee size={22} /></span><p className="eyebrow">QUBA · {t.ownerDesk}</p><h3>{localized(settings, locale, 'restaurantName') || 'QUBA'}</h3><p>{locale === 'ku' ? 'ئامرازێکی ڕوون بۆ بەڕێوەبردنی کارەکانی ڕۆژانە.' : 'مساحة واضحة لإدارة تفاصيل العمل اليومية.'}</p><div className="settings-aside-line"><span className="status-dot" />{locale === 'ku' ? 'داتاکانت لە Firebase پارێزراون' : 'بياناتك محفوظة في Firebase'}</div></aside></div>;
+  return <div className="settings-layout"><section className="panel settings-panel"><div className="panel-heading"><div><span className="panel-kicker">QUBA · {t.restaurant}</span><h3>{t.restaurant}</h3></div></div><form className="dialog-form" onSubmit={save}><label className="form-field"><span>{t.nameKu}</span><input value={values.restaurantNameKu} onChange={(e) => setValues({ ...values, restaurantNameKu: e.target.value })} /></label><label className="form-field"><span>{t.nameAr}</span><input value={values.restaurantNameAr} onChange={(e) => setValues({ ...values, restaurantNameAr: e.target.value })} /></label><label className="form-field"><span>{t.defaultLanguage}</span><select value={values.defaultLocale} onChange={(e) => setValues({ ...values, defaultLocale: e.target.value })}><option value="ku">کوردی</option><option value="ar">العربية</option></select></label><div className="settings-note"><Globe2 size={17} /><span>{locale === 'ku' ? 'هەردوو زمانەکە بە ئاراستەی ڕاست بۆ چەپ نیشان دەدرێن.' : 'تُعرض اللغتان في الاتجاه من اليمين إلى اليسار.'}</span></div><button className="button button-primary" type="submit" disabled={busy} data-testid="button-save-settings">{busy && <LoaderCircle className="spin" size={15} />}{t.saveSettings}</button></form></section><aside className="panel settings-aside"><span className="settings-emblem"><Coffee size={22} /></span><p className="eyebrow">QUBA · {t.ownerDesk}</p><h3>{localized(settings, locale, 'restaurantName') || 'QUBA'}</h3><p>{locale === 'ku' ? 'ڕێکخستنێک لەسەر خاوەنەکان لەسەر Firebase.' : 'إعدادات المالك تُحفظ في Firebase.'}</p></aside></div>;
 }
 
 export default App;

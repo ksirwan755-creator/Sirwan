@@ -51,6 +51,7 @@ const copy = {
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
     recentOrders: 'دوایین داواکارییەکان', viewAll: 'بینینی هەموو', noOrders: 'هێشتا داواکارییەک نییە',
     startOrder: 'داواکارییەکان لێرە دەردەکەون کاتێک تۆمار کران.',
+    tableNumber: 'مێزی ژمارە', tableAddItems: 'زیادکردنی خواردن و خواردنەوە', tableCurrentOrder: 'داواکاریی ئێستا', tableNoOrder: 'ئەم مێزە بەتاڵە', tableBalance: 'ماوەی حیساب', tableTotal: 'کۆی داواکاری', tableAutoCreate: 'مێزەکان ئامادە دەکرێن...',
     emptyTitle: 'هێشتا هیچ تۆمارێک نییە', emptyText: 'کاتێک تۆمارێک زیاد بکەیت، لێرە دەردەکەوێت.',
     add: 'زیادکردن', addItem: 'زیادکردنی بەرهەم', search: 'گەڕان', name: 'ناو', nameKu: 'ناو بە کوردی', nameAr: 'ناو بە عەرەبی',
     price: 'نرخ (دینار)', category: 'جۆر', foodCategory: 'خواردن', beverageCategory: 'خواردنەوە', seats: 'ژمارەی کورسی', label: 'ژمارە / ناونیشان',
@@ -94,6 +95,7 @@ const copy = {
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
     recentOrders: 'أحدث الطلبات', viewAll: 'عرض الكل', noOrders: 'لا توجد طلبات بعد',
     startOrder: 'ستظهر الطلبات هنا عند تسجيلها.',
+    tableNumber: 'الطاولة رقم', tableAddItems: 'إضافة طعام ومشروبات', tableCurrentOrder: 'الطلب الحالي', tableNoOrder: 'هذه الطاولة فارغة', tableBalance: 'المبلغ المتبقي', tableTotal: 'إجمالي الطلب', tableAutoCreate: 'جارٍ تجهيز الطاولات...',
     emptyTitle: 'لا توجد سجلات بعد', emptyText: 'ستظهر السجلات هنا بعد إضافتها.',
     add: 'إضافة', addItem: 'إضافة عنصر للقائمة', search: 'بحث', name: 'الاسم', nameKu: 'الاسم بالكردية', nameAr: 'الاسم بالعربية',
     price: 'السعر (دينار)', category: 'الفئة', foodCategory: 'طعام', beverageCategory: 'مشروبات', seats: 'عدد المقاعد', label: 'رقم / اسم الطاولة',
@@ -377,7 +379,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (path === '/') return <Dashboard data={snap} locale={locale} t={t} />;
     if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/tables') return <DataPage kind="tables" records={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
+    if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/expenses') return <DataPage kind="expenses" records={snap.expenses} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/reports') return <Reports data={snap} locale={locale} t={t} />;
@@ -601,6 +603,57 @@ function Modal({ title, children, onClose }: { title: string; children: ReactNod
   return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><section className="modal-card" role="dialog" aria-modal="true"><div className="modal-head"><h3>{title}</h3><button className="icon-button" type="button" aria-label="Close" onClick={onClose}><X size={17} /></button></div>{children}</section></div>;
 }
 
+function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
+  const [selectedTable, setSelectedTable] = useState<AnyRecord | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [preparing, setPreparing] = useState(true);
+  useEffect(() => {
+    let active = true;
+    actions.ensureDefaultTables()
+      .catch(() => { if (active) notify(t.serverError); })
+      .finally(() => { if (active) setPreparing(false); });
+    return () => { active = false; };
+  }, []);
+  const tables = [...data.tables].filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => {
+    const na = Number(String(a.label || '').match(/\\d+/)?.[0] || 999);
+    const nb = Number(String(b.label || '').match(/\\d+/)?.[0] || 999);
+    return na - nb;
+  });
+  const activeOrderFor = (tableId: string) => data.orders.find((order: AnyRecord) => order.tableId === tableId && !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)));
+  async function submitItems(payload: AnyRecord) {
+    if (!selectedTable) return;
+    const existing = activeOrderFor(selectedTable.id);
+    setBusy(true);
+    try {
+      if (existing) await actions.appendOrderItems(existing.id, payload.items);
+      else await actions.createOrder(payload);
+      setSelectedTable(null);
+      notify(t.saved);
+    } catch { notify(t.serverError); }
+    finally { setBusy(false); }
+  }
+  return <>
+    <div className="tables-page-intro"><div><b>{locale === 'ku' ? '٤٠ مێز بۆ دانیشتنی کڕیارەکان' : '40 طاولة لاستقبال الزبائن'}</b><small>{locale === 'ku' ? 'مێزێک هەڵبژێرە بۆ زیادکردنی داواکاری و حیسابی کڕیار.' : 'اختر طاولة لإضافة الطلب وحساب الزبون.'}</small></div><span>{tables.length} / 40</span></div>
+    {preparing && tables.length === 0 ? <div className="tables-loading">{t.tableAutoCreate}</div> : <div className="tables-grid">
+      {Array.from({ length: 40 }, (_, index) => {
+        const number = index + 1;
+        const table = tables.find((item: AnyRecord) => Number(String(item.label || '').match(/\\d+/)?.[0]) === number);
+        if (!table) return <article className="table-tile table-tile-missing" key={number}><span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small></article>;
+        const order = activeOrderFor(table.id);
+        const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
+        const remaining = order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0;
+        return <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} key={table.id} onClick={() => setSelectedTable(table)} data-testid={`button-table-${number}`}>
+          <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span>
+          <strong className="table-tile-number">{number}</strong>
+          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><b className="table-tile-balance">{formatIQD(remaining, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
+          <span className="table-tile-action">{order ? t.tableAddItems : t.newOrder}<Plus size={14} /></span>
+        </button>;
+      })}
+    </div>}
+    {selectedTable && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} initialTableId={selectedTable.id} lockTable onClose={() => setSelectedTable(null)} onCreate={submitItems} />}
+  </>;
+}
+
 function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -654,8 +707,8 @@ function OrderCard({ order, data, locale, t, onPay, onCancel, busy, actions, not
   </article>;
 }
 
-function NewOrderDialog({ data, locale, t, busy, onClose, onCreate }: { data: AnyRecord; locale: Locale; t: any; busy: boolean; onClose: () => void; onCreate: (payload: AnyRecord) => void }) {
-  const [tableId, setTableId] = useState('');
+function NewOrderDialog({ data, locale, t, busy, onClose, onCreate, initialTableId = '', lockTable = false }: { data: AnyRecord; locale: Locale; t: any; busy: boolean; onClose: () => void; onCreate: (payload: AnyRecord) => void; initialTableId?: string; lockTable?: boolean }) {
+  const [tableId, setTableId] = useState(initialTableId);
   const [customerId, setCustomerId] = useState('');
   const [notes, setNotes] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -668,7 +721,7 @@ function NewOrderDialog({ data, locale, t, busy, onClose, onCreate }: { data: An
     onCreate({ tableId, customerId: customerId || null, items: selectedItems, notes, status: 'new' });
   }
   return <Modal title={t.newOrder} onClose={onClose}><form className="dialog-form" onSubmit={submit}>
-    <div className="form-grid"><label className="form-field"><span>{t.selectTable}</span><select required value={tableId} onChange={(e) => setTableId(e.target.value)}><option value="">{t.selectTable}</option>{data.tables.filter((table: AnyRecord) => table.active !== false).map((table: AnyRecord) => <option key={table.id} value={table.id}>{table.label}</option>)}</select></label><label className="form-field"><span>{t.customer}</span><select value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">{t.customer}</option>{data.customers.map((customer: AnyRecord) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label></div>
+    <div className="form-grid"><label className="form-field"><span>{t.selectTable}</span><select required disabled={lockTable} value={tableId} onChange={(e) => setTableId(e.target.value)}><option value="">{t.selectTable}</option>{data.tables.filter((table: AnyRecord) => table.active !== false).map((table: AnyRecord) => <option key={table.id} value={table.id}>{table.label}</option>)}</select></label><label className="form-field"><span>{t.customer}</span><select value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">{t.customer}</option>{data.customers.map((customer: AnyRecord) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label></div>
     <div className="product-picker-head"><b>{t.chooseProducts}</b><span>{selectedItems.length} {t.items}</span></div>
     {products.length === 0 ? <EmptyState locale={locale} title={t.noProducts} /> : <div className="product-picker">{products.map((product: AnyRecord) => <div className="picker-product" key={product.id}><div><b>{localized(product, locale)}</b><small>{formatIQD(product.priceIqd, locale)}</small></div><div className="qty-control"><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: Math.max(0, (prev[product.id] || 0) - 1) }))}>-</button><span>{quantities[product.id] || 0}</span><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }))}>+</button></div></div>)}</div>}
     <label className="form-field"><span>{t.noteOrder}</span><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>

@@ -64,10 +64,9 @@ export async function startEmployeePhoneLogin(phone: string): Promise<Confirmati
   if (!auth || !db || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
   const normalized = phone.trim();
   if (!/^\+[1-9]\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
-  const employeeSnapshot = await getDoc(doc(db, 'owners', ownerUid, 'employees', normalized));
-  if (!employeeSnapshot.exists() || employeeSnapshot.data().active !== true) {
-    throw new Error('This phone number is not registered as an active QUBA employee.');
-  }
+  // Do not read the employee document before phone verification: Firestore rules
+  // only permit an employee to read their own record after Firebase adds the
+  // verified phone_number claim. The profile is checked in the auth-state listener.
   if (phoneRecaptcha) {
     phoneRecaptcha.clear();
     phoneRecaptcha = null;

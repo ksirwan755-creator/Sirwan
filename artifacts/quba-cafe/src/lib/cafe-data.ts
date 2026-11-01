@@ -166,20 +166,27 @@ export async function createEmployee(input: { name: string; phoneE164: string; p
   assertOwner();
   if (!db) throw new Error('Firebase is not configured.');
   const phoneE164 = input.phoneE164.trim();
-  if (!/^\\+[1-9]\\d{7,14}$/.test(phoneE164)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
+  if (!/^\+[1-9]\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format, for example +9647XXXXXXXXX.');
   if (!input.name.trim()) throw new Error('Employee name is required.');
   if (input.password.length < 6) throw new Error('Employee password must be at least 6 characters.');
   const ref = doc(db, 'owners', ownerUid, 'employees', phoneE164);
   const existing = await getDoc(ref);
-  if (existing.exists()) throw new Error('This phone number is already registered.');
+  if (existing.exists() && existing.data().authUid) throw new Error('This employee already has a login account.');
   const uid = await createEmployeeAuthAccount(phoneE164, input.password);
-  await createEmployeeProfileRecords({
-    uid,
+  const createdAt = existing.exists() ? existing.data().createdAt || new Date().toISOString() : new Date().toISOString();
+  const now = new Date().toISOString();
+  const profile = {
+    authUid: uid,
     phoneE164,
     name: input.name.trim(),
     assignedTableIds: [...new Set(input.assignedTableIds)],
     assignedTables: input.assignedTables,
-  });
+    active: true,
+    createdAt,
+    updatedAt: now,
+  };
+  await setDoc(ref, profile);
+  await setDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid), profile);
 }
 
 export async function updateEmployee(phoneE164: string, changes: { name?: string; assignedTableIds?: string[]; assignedTables?: { id: string; label: string }[]; active?: boolean }): Promise<void> {

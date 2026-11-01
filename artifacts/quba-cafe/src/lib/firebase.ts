@@ -63,7 +63,7 @@ let phoneRecaptcha: RecaptchaVerifier | null = null;
 export async function startEmployeePhoneLogin(phone: string): Promise<ConfirmationResult> {
   if (!auth || !db || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
   const normalized = phone.trim();
-  if (!/^\\+[1-9]\\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
+  if (!/^\+[1-9]\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
   if (phoneRecaptcha) {
     phoneRecaptcha.clear();
     phoneRecaptcha = null;

@@ -119,7 +119,12 @@ export async function updateRecord(name: RecordCollection, id: string, changes: 
 
 export async function deleteRecord(name: RecordCollection, id: string): Promise<void> {
   assertOwner();
-  if (name === 'products' || name === 'customers' || name === 'orders') {
+  if (name === 'products') {
+    if (!id.trim()) throw new Error('A record ID is required.');
+    await updateDoc(doc(ownerCollection(name), id), { active: false, updatedAt: new Date().toISOString() });
+    return;
+  }
+  if (name === 'customers' || name === 'orders') {
     throw new Error('This record type is protected and cannot be deleted from the app.');
   }
   if (!id.trim()) throw new Error('A record ID is required.');

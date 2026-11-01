@@ -166,7 +166,7 @@ export async function createEmployee(input: { name: string; phoneE164: string; a
   assertOwner();
   if (!db) throw new Error('Firebase is not configured.');
   const phoneE164 = input.phoneE164.trim();
-  if (!/^\\+[1-9]\\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format, for example +9647XXXXXXXXX.');
+  if (!/^\+[1-9]\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format, for example +9647XXXXXXXXX.');
   if (!input.name.trim()) throw new Error('Employee name is required.');
   const ref = doc(db, 'owners', ownerUid, 'employees', phoneE164);
   const existing = await getDoc(ref);

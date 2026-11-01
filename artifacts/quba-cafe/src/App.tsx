@@ -42,6 +42,17 @@ const getTableState = (table: AnyRecord | null | undefined): TableStatus => {
   return normalizeTableStatus(table.status, table.active);
 };
 
+function combineOrderItems(items: AnyRecord[] = []): AnyRecord[] {
+  const grouped = new Map<string, AnyRecord>();
+  for (const item of items) {
+    const key = [item.productId || item.nameKu || item.nameAr || 'item', item.unitPriceIqd ?? 0, item.categoryId || ''].join('::');
+    const existing = grouped.get(key);
+    if (existing) existing.quantity = Number(existing.quantity || 0) + Number(item.quantity || 0);
+    else grouped.set(key, { ...item, quantity: Number(item.quantity || 0) });
+  }
+  return Array.from(grouped.values());
+}
+
 const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
@@ -456,7 +467,7 @@ function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profil
           <div className="employee-order-head"><b>{locale === 'ku' ? 'مێزی' : 'الطاولة'} {String(tableLabels.get(order.tableId) || '—')}</b><span className="status-badge badge-open">{orderStatusLabel(order.status, locale, t)}</span></div>
           <small>{dateText(order.createdAt, locale)}</small>
           {(() => {
-            const items = order.items || [];
+            const items = combineOrderItems(order.items || []);
             const beverages = items.filter((item: AnyRecord) => item.categoryId === '__quba_beverage__');
             const foods = items.filter((item: AnyRecord) => item.categoryId !== '__quba_beverage__');
             return <div className="employee-order-items employee-order-items-split">
@@ -881,7 +892,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
         const paid = (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0);
         return <article className="table-history-card" key={order.id}>
           <div className="table-history-head"><div><b>{t.tableCurrentOrder}</b><small>{dateText(order.createdAt, locale)}</small></div><span className={normalizeOrderStatus(order.status) === 'paid' ? 'status-badge badge-paid' : 'status-badge badge-open'}>{orderStatusLabel(order.status, locale, t)}</span></div>
-          {(order.items || []).map((item: AnyRecord, index: number) => <div className="table-history-line" key={item.productId + '-' + index}><span>{localized(item, locale) || item.nameKu || item.nameAr} <small>× {item.quantity}</small></span><b>{formatIQD(Number(item.unitPriceIqd || 0) * Number(item.quantity || 0), locale)}</b></div>)}
+          {combineOrderItems(order.items || []).map((item: AnyRecord, index: number) => <div className="table-history-line" key={item.productId + '-' + index}><span>{localized(item, locale) || item.nameKu || item.nameAr} <small>× {item.quantity}</small></span><b>{formatIQD(Number(item.unitPriceIqd || 0) * Number(item.quantity || 0), locale)}</b></div>)}
           <div className="table-history-total"><span>{t.tableTotal}</span><b>{formatIQD(order.totalIqd, locale)}</b></div><small className="table-history-paid">{t.paidAmount}: {formatIQD(paid, locale)}</small>
         </article>;
       })}</div>}
@@ -917,14 +928,22 @@ function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: 
   const [kind, setKind] = useState<'food' | 'beverage'>('food');
   const [selectedTableId, setSelectedTableId] = useState('all');
   const activeOrders = data.orders.filter((order: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)) && order.tableId && (selectedTableId === 'all' || order.tableId === selectedTableId));
-  const rows = activeOrders.flatMap((order: AnyRecord) => {
+  const rawRows = activeOrders.flatMap((order: AnyRecord) => {
     const table = data.tables.find((entry: AnyRecord) => entry.id === order.tableId);
-    return (order.items || []).filter((item: AnyRecord) => {
+    return combineOrderItems(order.items || []).filter((item: AnyRecord) => {
       const product = data.products.find((entry: AnyRecord) => entry.id === item.productId);
       const categoryId = product?.categoryId || item.categoryId || '';
       return kind === 'beverage' ? categoryId === '__quba_beverage__' : categoryId !== '__quba_beverage__';
-    }).map((item: AnyRecord, index: number) => ({ ...item, orderId: order.id, tableLabel: table?.label || '—', status: order.status, rowKey: order.id + '-' + item.productId + '-' + index }));
+    }).map((item: AnyRecord) => ({ ...item, orderId: order.id, tableId: order.tableId, tableLabel: table?.label || '—', status: order.status }));
   });
+  const serviceGroups = new Map<string, AnyRecord>();
+  for (const item of rawRows) {
+    const key = [item.tableId, item.productId || item.nameKu || item.nameAr, item.unitPriceIqd ?? 0, item.status].join('::');
+    const existing = serviceGroups.get(key);
+    if (existing) existing.quantity = Number(existing.quantity || 0) + Number(item.quantity || 0);
+    else serviceGroups.set(key, { ...item, rowKey: key });
+  }
+  const rows = Array.from(serviceGroups.values());
   return <div className="service-page">
     <div className="service-page-intro"><div><span>QUBA · {t.serviceTitle}</span><h2>{t.serviceTitle}</h2><small>{locale === 'ku' ? 'داواکارییە چالاکەکان بە جۆری خواردن جیاکراونەتەوە.' : 'الطلبات النشطة مفصولة حسب نوع الصنف.'}</small></div><b>{rows.length}</b></div>
     <label className="form-field service-table-filter"><span>{locale === 'ku' ? 'هەڵبژاردنی مێز' : 'اختر الطاولة'}</span><select value={selectedTableId} onChange={(e) => setSelectedTableId(e.target.value)}><option value="all">{locale === 'ku' ? 'هەموو مێزەکان' : 'كل الطاولات'}</option>{data.tables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord,b: AnyRecord) => String(a.label).localeCompare(String(b.label), undefined, { numeric: true })).map((table: AnyRecord) => <option key={table.id} value={table.id}>{locale === 'ku' ? 'مێزی' : 'طاولة'} {table.label}</option>)}</select></label>
@@ -972,7 +991,7 @@ function OrderCard({ order, data, locale, t, onPay, onCancel, busy, actions, not
     <div className="order-card-top"><div className="order-card-meta"><span className={`status-badge ${status === 'paid' ? 'badge-paid' : status === 'cancelled' ? 'badge-cancelled' : 'badge-open'}`}>{orderStatusLabel(status, locale, t)}</span><b>{table?.label || t.table}</b></div><small>{dateText(order.createdAt, locale)}</small></div>
     <div className="order-card-body">
       <div className="customer-callout"><strong>{customer?.name || t.noCustomer}</strong><small>{customer?.phone || ''}</small></div>
-      <div className="order-lines">{(order.items || []).map((item: AnyRecord, i: number) => <div key={`${item.productId}-${i}`}><span>{localized(item, locale)} <small>× {item.quantity}</small></span><b>{formatIQD(item.unitPriceIqd * item.quantity, locale)}</b></div>)}</div>
+      <div className="order-lines">{combineOrderItems(order.items || []).map((item: AnyRecord, i: number) => <div key={`${item.productId}-${i}`}><span>{localized(item, locale)} <small>× {item.quantity}</small></span><b>{formatIQD(item.unitPriceIqd * item.quantity, locale)}</b></div>)}</div>
       {order.notes && <p className="order-note">{order.notes}</p>}
       <div className="order-card-bottom"><div><small>{t.total}</small><b>{formatIQD(order.totalIqd, locale)}</b><small className="paid-note">{t.paidAmount}: {formatIQD(paid, locale)}</small></div>
       <div className="order-actions">
@@ -1005,7 +1024,7 @@ function NewOrderDialog({ data, locale, t, busy, onClose, onCreate, initialTable
     <div className="form-grid"><label className="form-field"><span>{t.selectTable}</span><select required disabled={lockTable} value={tableId} onChange={(e) => setTableId(e.target.value)}><option value="">{t.selectTable}</option>{data.tables.filter((table: AnyRecord) => table.active !== false).map((table: AnyRecord) => <option key={table.id} value={table.id}>{table.label}</option>)}</select></label><label className="form-field"><span>{t.customer}</span><select value={customerId} onChange={(e) => setCustomerId(e.target.value)}><option value="">{t.customer}</option>{data.customers.map((customer: AnyRecord) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select></label></div>
     {currentOrder && <section className="panel" style={{ padding: 14, marginBottom: 12 }}>
       <b>{locale === 'ku' ? 'داواکاریی ئێستای ئەم مێزە' : 'الطلب الحالي لهذه الطاولة'}</b>
-      <div className="employee-order-items" style={{ marginTop: 8 }}>{(currentOrder.items || []).map((item: AnyRecord, index: number) => <div key={`${item.productId || item.nameKu || index}-${index}`}><span>{localized(item, locale) || item.nameKu || item.nameAr}</span><b>× {item.quantity}</b></div>)}</div>
+      <div className="employee-order-items" style={{ marginTop: 8 }}>{combineOrderItems(currentOrder.items || []).map((item: AnyRecord, index: number) => <div key={`${item.productId || item.nameKu || index}-${index}`}><span>{localized(item, locale) || item.nameKu || item.nameAr}</span><b>× {item.quantity}</b></div>)}</div>
       <small style={{ display: 'block', marginTop: 8 }}>{t.tableTotal}: {formatIQD(currentOrder.totalIqd, locale)}</small>
     </section>}
     <div className="product-picker-head"><b>{currentOrder ? (locale === 'ku' ? 'خواردنی زیاتر زیاد بکە' : 'أضف أصنافاً أخرى') : t.chooseProducts}</b><span>{selectedItems.length} {t.items}</span></div>

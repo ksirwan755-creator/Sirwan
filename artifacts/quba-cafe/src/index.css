@@ -786,3 +786,13 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .service-table-number b{font-size:17px;color:hsl(var(--primary))}.service-item-name b{font-size:13px}.service-order-row>strong{padding:7px 10px;border-radius:9px;background:#f3f4f0;font-size:13px}
 .picker-service-tabs{margin:8px 0 12px}
 @media(max-width:680px){.table-detail-head{grid-template-columns:1fr auto;gap:9px;padding:13px}.table-detail-head>.button:first-child{grid-column:1/-1;justify-self:start}.table-detail-head h2{font-size:25px}.table-detail-summary{grid-template-columns:1fr 1fr;gap:7px}.table-detail-summary>div{padding:10px}.table-detail-summary b{font-size:13px}.table-detail-footer{bottom:6px;padding:11px}.table-detail-footer b{font-size:15px}.service-page-intro{padding:13px}.service-order-row{grid-template-columns:55px 1fr auto;gap:8px;padding:11px}.service-table-number b{font-size:15px}}
+
+
+/* QUBA table-focused service clarity */
+.service-table-filter{max-width:320px;margin:0}
+.service-table-filter select{width:100%;min-height:42px;border:1px solid hsl(var(--border));border-radius:11px;padding:8px 11px;background:hsl(var(--card));color:hsl(var(--foreground))}
+.employee-order-items-split{gap:12px}
+.employee-order-items-split section{display:grid;gap:7px;padding:10px 12px;border:1px solid hsl(var(--border));border-radius:11px;background:hsl(var(--muted)/.22)}
+.employee-order-kind{display:flex;align-items:center;gap:7px;color:hsl(var(--primary));font-size:11px}
+.table-tile-wrap .small-button{justify-content:center;min-height:34px}
+@media(max-width:680px){.service-table-filter{max-width:none;width:100%}.employee-order-items-split section{padding:9px}}

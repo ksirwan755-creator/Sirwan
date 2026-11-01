@@ -78,7 +78,11 @@ export async function createEmployeeAuthAccount(phone: string, password: string)
   try {
     const result = await createUserWithEmailAndPassword(secondaryAuth, employeeLoginEmail(phone), password);
     return result.user.uid;
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 'auth/email-already-in-use') {
+      const existing = await signInWithEmailAndPassword(secondaryAuth, employeeLoginEmail(phone), password);
+      return existing.user.uid;
+    }
     throw error;
   } finally {
     await signOut(secondaryAuth).catch(() => undefined);

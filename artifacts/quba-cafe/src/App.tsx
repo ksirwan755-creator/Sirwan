@@ -658,6 +658,34 @@ function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: an
       <MetricCard icon={ArrowDownLeft} label={t.costs} value={formatIQD(expenseTotal, locale)} note={`${todaysExpenses.length} ${t.expensesCount}`} tone="rose" />
     </section>
 
+    <section className="panel" style={{ padding: 16, marginBottom: 18 }}>
+      <div className="panel-heading">
+        <div><span className="panel-kicker">{isKu ? 'مێزەکانی کڕیار' : 'طاولات الزبائن'}</span><h3>{isKu ? 'مێزە چالاکەکان' : 'الطاولات النشطة'}</h3></div>
+        <Link href="/tables" className="text-link">{t.viewAll}<ArrowUpRight size={15} /></Link>
+      </div>
+      {(() => {
+        const activeTableOrders = activeOrders
+          .filter((order: AnyRecord) => order.tableId)
+          .reduce((list: AnyRecord[], order: AnyRecord) => {
+            const table = data.tables.find((item: AnyRecord) => item.id === order.tableId && item.active !== false);
+            if (table && !list.some((entry) => entry.table.id === table.id)) list.push({ table, order });
+            return list;
+          }, [])
+          .sort((a: AnyRecord, b: AnyRecord) => Number(String(a.table.label || '').match(/\\d+/)?.[0] || 999) - Number(String(b.table.label || '').match(/\\d+/)?.[0] || 999));
+        return activeTableOrders.length === 0
+          ? <p style={{ color: 'var(--muted, #777)', margin: '12px 0 2px' }}>{isKu ? 'هیچ مێزێک ئێستا چالاک نییە.' : 'لا توجد طاولات نشطة حالياً.'}</p>
+          : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: 10, marginTop: 12 }}>
+              {activeTableOrders.map(({ table, order }: AnyRecord) => <Link href="/tables" key={table.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 10px', border: '1px solid var(--border, #e5e7eb)', borderRadius: 12, color: 'inherit', textDecoration: 'none', background: 'var(--surface, #fff)' }}>
+                <span aria-label={isKu ? 'چالاک' : 'نشط'} title={isKu ? 'چالاک' : 'نشط'} style={{ width: 9, height: 9, minWidth: 9, borderRadius: '50%', background: '#16a34a', boxShadow: '0 0 0 3px rgba(22,163,74,.13)' }} />
+                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                  <b>{table.label}</b>
+                  <small style={{ color: 'var(--muted, #777)' }}>{(order.items || []).length} {t.items}</small>
+                </span>
+              </Link>)}
+            </div>;
+      })()}
+    </section>
+
     <section className="dashboard-lower dashboard-redesign-lower">
       <div className="panel recent-panel dashboard-recent">
         <div className="panel-heading"><div><span className="panel-kicker">{t.todayFlow}</span><h3>{t.recentOrders}</h3></div><Link href="/orders" className="text-link">{t.viewAll}<ArrowUpRight size={15} /></Link></div>

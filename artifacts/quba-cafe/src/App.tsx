@@ -680,7 +680,7 @@ function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: an
     <section className="dashboard-quick-actions" aria-label={isKu ? 'کردارە خێراکان' : 'إجراءات سريعة'}>
       <Link href="/orders" className="quick-action quick-action-primary"><span><Plus size={20} /></span><b>{isKu ? 'داواکارییەکی نوێ' : 'طلب جديد'}</b><small>{isKu ? 'تۆمارکردنی داواکاری' : 'إضافة طلب للزبون'}</small></Link>
       <Link href="/tables" className="quick-action"><span><Utensils size={20} /></span><b>{isKu ? 'مێزەکان' : 'الطاولات'}</b><small>{isKu ? 'بینینی دۆخی مێز' : 'عرض حالة الطاولات'}</small></Link>
-      <Link href="/expenses" className="quick-action"><span><Wallet size={20} /></span><b>{isKu ? 'زیادکردنی خەرجی' : 'إضافة مصروف'}</b><small>{isKu ? 'تۆمارکردنی خەرجی' : 'تسجيل مصروف اليوم'}</small></Link>
+      <Link href="/employees" className="quick-action"><span><Users size={20} /></span><b>{isKu ? 'کارمەندان' : 'الموظفون'}</b><small>{isKu ? 'بەڕێوەبردنی کارمەندان' : 'إدارة الموظفين'}</small></Link>
     </section>
 
     <div className="dashboard-section-title"><div><span>{isKu ? 'پوختەی کار' : 'نظرة عامة'}</span><h3>{isKu ? 'بارودۆخی ئەمڕۆ' : 'ملخص اليوم'}</h3></div><span className="dashboard-date-chip"><CalendarDays size={14} />{todayLabel}</span></div>

@@ -484,7 +484,7 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
     event.preventDefault(); setBusy(true);
     try {
       const assignedTables = availableTables.filter((table: AnyRecord) => assigned.includes(table.id)).map((table: AnyRecord) => ({ id: table.id, label: table.label }));
-      if (editing) await actions.updateEmployee(editing.phoneE164, { name: name.trim(), assignedTableIds: assigned, assignedTables, active });
+      if (editing?.authUid) await actions.updateEmployee(editing.phoneE164, { name: name.trim(), assignedTableIds: assigned, assignedTables, active });
       else await actions.createEmployee({ name: name.trim(), phoneE164: phone.trim(), password: employeePassword, assignedTableIds: assigned, assignedTables });
       setDialogOpen(false); notify(t.saved);
     } catch (error) { notify(error instanceof Error ? error.message : t.serverError); }
@@ -505,12 +505,12 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
       <form className="dialog-form" onSubmit={save}>
         <label className="form-field"><span>{t.name}</span><input required value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label className="form-field"><span>{t.phone} (+964...)</span><input required disabled={!!editing} type="tel" inputMode="tel" placeholder="+9647XXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" /></label>
-        {!editing && <label className="form-field"><span>{isKu ? 'وشەی نهێنیی کارمەند (لانیکەم ٦ پیت)' : 'كلمة مرور الموظف (6 أحرف على الأقل)'}</span><input required minLength={6} type="password" autoComplete="new-password" value={employeePassword} onChange={(e) => setEmployeePassword(e.target.value)} dir="ltr" /></label>}
+        {!editing?.authUid && <label className="form-field"><span>{isKu ? 'وشەی نهێنیی کارمەند (لانیکەم ٦ پیت)' : 'كلمة مرور الموظف (6 أحرف على الأقل)'}</span><input required minLength={6} type="password" autoComplete="new-password" value={employeePassword} onChange={(e) => setEmployeePassword(e.target.value)} dir="ltr" /></label>}
         <div className="employee-table-picker"><b>{isKu ? 'ئەو مێزانەی کارمەند دەیبینێت' : 'الطاولات التي يمكن للموظف رؤيتها'}</b>
           {availableTables.map((table: AnyRecord) => <label key={table.id}><input type="checkbox" checked={assigned.includes(table.id)} onChange={(e) => setAssigned((prev) => e.target.checked ? [...prev, table.id] : prev.filter((id) => id !== table.id))} /><span>{isKu ? 'مێزی' : 'طاولة'} {table.label}</span></label>)}
         </div>
         {editing && <label className="check-line"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />{t.active}</label>}
-        <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={() => setDialogOpen(false)}>{t.cancel}</button><button className="button button-primary" disabled={busy || !name.trim() || !phone.trim() || (!editing && employeePassword.length < 6)} type="submit">{busy && <LoaderCircle className="spin" size={15} />}{t.save}</button></div>
+        <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={() => setDialogOpen(false)}>{t.cancel}</button><button className="button button-primary" disabled={busy || !name.trim() || !phone.trim() || (!editing?.authUid && employeePassword.length < 6)} type="submit">{busy && <LoaderCircle className="spin" size={15} />}{t.save}</button></div>
       </form>
     </Modal>}
   </>;

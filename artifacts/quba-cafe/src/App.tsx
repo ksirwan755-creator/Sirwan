@@ -839,30 +839,12 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(true);
   useEffect(() => {
     let active = true;
     actions.ensureDefaultTables().catch(() => { if (active) notify(t.serverError); }).finally(() => { if (active) setPreparing(false); });
     return () => { active = false; };
   }, []);
-  async function removeTable(table: AnyRecord) {
-    const isKu = locale === 'ku';
-    const message = isKu
-      ? `دڵنیایت دەتەوێت مێزی ژمارە ${table.label} لاببەیت؟ مێژووی داواکارییە کۆنەکان دەمێنێتەوە.`
-      : `هل تريد إزالة الطاولة رقم ${table.label}؟ سيبقى سجل الطلبات السابقة محفوظاً.`;
-    if (!window.confirm(message) || deletingTableId) return;
-    setDeletingTableId(table.id);
-    try {
-      await actions.deleteRecord('tables', table.id);
-      if (selectedTableId === table.id) setSelectedTableId(null);
-      notify(isKu ? 'مێزەکە لابرا' : 'تمت إزالة الطاولة');
-    } catch (error) {
-      notify(recordActionError(error, t));
-    } finally {
-      setDeletingTableId(null);
-    }
-  }
   const allTables = [...data.tables];
   const selectedTable = allTables.find((table: AnyRecord) => table.id === selectedTableId) || null;
   const tables = allTables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => Number(String(a.label || '').match(/\d+/)?.[0] || 999) - Number(String(b.label || '').match(/\d+/)?.[0] || 999));
@@ -929,30 +911,32 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     <div className="table-detail-footer"><div><small>{t.currentBalance}</small><b>{formatIQD(remaining, locale)}</b></div><button className="button button-primary" type="button" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button></div>
     {adding && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} initialTableId={selectedTable.id} lockTable currentOrder={activeOrders[0] || null} onClose={() => setAdding(false)} onCreate={submitItems} />}
   </section>;
-  return <>
-    <div className="tables-page-intro"><div><b>{locale === 'ku' ? '٤٠ مێز بۆ دانیشتنی کڕیارەکان' : '40 طاولة لاستقبال الزبائن'}</b><small>{locale === 'ku' ? 'ژمارەی مێز هەڵبژێرە؛ هەموو داواکارییەکانی لە شاشەی تایبەتی خۆیدا دەمێننەوە.' : 'اختر رقم الطاولة؛ ستبقى جميع طلباتها محفوظة في صفحتها.'}</small></div><span>{tables.length} / 40</span></div>
-    <div className="tables-grid">{Array.from({ length: 40 }, (_, index) => {
-      const number = index + 1;
-      const table = allTables.find((item: AnyRecord) => Number(String(item.label || '').match(/\d+/)?.[0]) === number);
-      if (!table) return <article className="table-tile table-tile-missing" key={number}><span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small></article>;
-      if (table.active === false) return <button type="button" className="table-tile table-tile-missing" key={table.id} style={{ width: '100%' }} onClick={() => setSelectedTableId(table.id)} data-testid={`button-table-${number}`}>
-        <span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small><span className="table-tile-action">{t.newOrder}<Plus size={14} /></span>
-      </button>;
-      const order = data.orders.find((item: AnyRecord) => item.tableId === table.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(item.status)));
-      const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
-      const due = order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0;
-      const beverageQty = order ? (order.items || []).filter((item: AnyRecord) => (data.products.find((product: AnyRecord) => product.id === item.productId)?.categoryId || item.categoryId) === '__quba_beverage__').reduce((sum: number, item: AnyRecord) => sum + Number(item.quantity || 0), 0) : 0;
-      const foodQty = order ? (order.items || []).filter((item: AnyRecord) => (data.products.find((product: AnyRecord) => product.id === item.productId)?.categoryId || item.categoryId) !== '__quba_beverage__').reduce((sum: number, item: AnyRecord) => sum + Number(item.quantity || 0), 0) : 0;
-      return <div className="table-tile-wrap" key={table.id} style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} style={{ width: '100%', flex: 1 }} onClick={() => setSelectedTableId(table.id)} data-testid={`button-table-${number}`}>
-          <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span><strong className="table-tile-number">{number}</strong>
-          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><span className="table-tile-summary">{locale === 'ku' ? 'خواردن' : 'طعام'}: {foodQty} · {locale === 'ku' ? 'خواردنەوە' : 'مشروبات'}: {beverageQty}</span><b className="table-tile-balance">{formatIQD(due, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
-          <span className="table-tile-action">{order ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
-        </button>
-        <button type="button" className="button button-secondary small-button" style={{ width: '100%', marginTop: 6 }} disabled={deletingTableId === table.id} onClick={() => void removeTable(table)} data-testid={`button-delete-table-${number}`}><Trash2 size={14} />{deletingTableId === table.id ? t.loading : (locale === 'ku' ? 'لابردن' : 'إزالة')}</button>
-      </div>;
-    })}</div>
-  </>;
+  const sortedTables = allTables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => Number(String(a.label || '').match(/\d+/)?.[0] || 999) - Number(String(b.label || '').match(/\d+/)?.[0] || 999));
+  const tableCards = sortedTables.map((table: AnyRecord) => {
+    const openOrders = data.orders.filter((item: AnyRecord) => item.tableId === table.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(item.status)));
+    const order = openOrders[0];
+    const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
+    return { table, order, due: order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0, isActive: openOrders.length > 0 };
+  });
+  const activeTableCards = tableCards.filter((item: AnyRecord) => item.isActive);
+  const inactiveTableCards = tableCards.filter((item: AnyRecord) => !item.isActive);
+  const renderTableButton = (item: AnyRecord) => <button type="button" className={`table-tile quba-simple-table ${item.isActive ? 'table-tile-busy' : ''}`} key={item.table.id} onClick={() => setSelectedTableId(item.table.id)} data-testid={`button-table-${String(item.table.label).replace(/\D/g, '')}`}>
+    <strong className="table-tile-number">{item.table.label}</strong>
+    <span className={`quba-table-state ${item.isActive ? 'is-active' : 'is-inactive'}`}>{item.isActive ? (locale === 'ku' ? 'چالاک' : 'نشطة') : (locale === 'ku' ? 'ناچالاک' : 'غير نشطة')}</span>
+    {item.isActive ? <><b className="table-tile-balance">{formatIQD(item.due, locale)}</b><small>{t.tableBalance}</small></> : <small>{t.tableNoOrder}</small>}
+    <span className="table-tile-action">{item.isActive ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
+  </button>;
+  if (preparing && tableCards.length === 0) return <div className="tables-loading">{t.tableAutoCreate}</div>;
+  return <section className="quba-tables-only">
+    <div className="quba-tables-section">
+      <header className="quba-tables-heading"><h2>{locale === 'ku' ? 'مێزە چالاکەکان' : 'الطاولات النشطة'}</h2><span>{activeTableCards.length}</span></header>
+      {activeTableCards.length ? <div className="tables-grid quba-tables-grid">{activeTableCards.map(renderTableButton)}</div> : <p className="quba-empty-tables">{locale === 'ku' ? 'هیچ مێزێکی چالاک نییە' : 'لا توجد طاولات نشطة'}</p>}
+    </div>
+    <div className="quba-tables-section">
+      <header className="quba-tables-heading"><h2>{locale === 'ku' ? 'مێزە ناچالاکەکان' : 'الطاولات غير النشطة'}</h2><span>{inactiveTableCards.length}</span></header>
+      {inactiveTableCards.length ? <div className="tables-grid quba-tables-grid">{inactiveTableCards.map(renderTableButton)}</div> : <p className="quba-empty-tables">{locale === 'ku' ? 'هەموو مێزەکان چالاکن' : 'كل الطاولات نشطة'}</p>}
+    </div>
+  </section>;
 }
 function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {
   const [kind, setKind] = useState<'food' | 'beverage'>('food');

@@ -485,7 +485,7 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
     try {
       const assignedTables = availableTables.filter((table: AnyRecord) => assigned.includes(table.id)).map((table: AnyRecord) => ({ id: table.id, label: table.label }));
       if (editing?.authUid) await actions.updateEmployee(editing.phoneE164, { name: name.trim(), assignedTableIds: assigned, assignedTables, active });
-      else await actions.createEmployee({ name: name.trim(), phoneE164: phone.trim(), password: employeePassword, assignedTableIds: assigned, assignedTables });
+      else await actions.createEmployee({ name: name.trim(), phoneE164: phone.trim(), password: employeePassword, assignedTableIds: assigned, assignedTables, active });
       setDialogOpen(false); notify(t.saved);
     } catch (error) { notify(error instanceof Error ? error.message : t.serverError); }
     finally { setBusy(false); }

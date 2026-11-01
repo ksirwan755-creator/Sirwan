@@ -435,7 +435,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
         const nextTableStatus = nextStatus === 'paid' || nextStatus === 'cancelled' ? 'available' : 'occupied';
         transaction.update(tableRef, {
           status: normalizeTableStatus(nextTableStatus),
-          active: true,
+          active: nextStatus !== 'paid',
           updatedAt: new Date().toISOString(),
         });
       }
@@ -486,7 +486,7 @@ export async function addPayment(orderId: string, input: { amountIqd: number; me
         const nextTableStatus = isPaid ? 'available' : 'occupied';
         transaction.update(tableRef, {
           status: normalizeTableStatus(nextTableStatus),
-          active: true,
+          active: !isPaid,
           updatedAt: new Date().toISOString(),
         });
       }

@@ -114,7 +114,8 @@ export type RecordCollection =
   | 'tables'
   | 'orders'
   | 'expenses'
-  | 'customers';
+  | 'customers'
+  | 'employees';
 
 export interface CreateOrderInput {
   tableId: string | null;

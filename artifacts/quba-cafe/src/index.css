@@ -755,3 +755,34 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 .employee-table-picker>b{grid-column:1/-1;font-size:12px;margin-bottom:4px;}
 .employee-table-picker label{display:flex;align-items:center;gap:6px;font-size:11px;}
 @media(max-width:760px){.employee-orders-wrap{margin-top:15px;padding-inline:12px;}.employee-welcome{padding:17px;}.employee-admin-card{align-items:flex-start;}.employee-admin-card .row-actions{width:100%;}.employee-table-picker{grid-template-columns:repeat(3,minmax(0,1fr));}.employee-top-actions{gap:6px;}.employee-logout{font-size:10px;padding:7px;}}
+
+/* QUBA simple table detail and food/drink preparation screens */
+.table-detail-page,.service-page{display:flex;flex-direction:column;gap:15px}
+.table-detail-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:17px;border:1px solid hsl(var(--border));border-radius:17px;background:hsl(var(--card))}
+.table-detail-head>div{display:flex;flex-direction:column;gap:4px}.table-detail-head h2{margin:0;font-size:30px;color:hsl(var(--primary))}
+.table-detail-kicker,.service-page-intro>div>span{font-size:10px;color:hsl(var(--muted-foreground));font-weight:700}
+.table-detail-state{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:hsl(var(--muted-foreground))}
+.table-detail-state i{width:8px;height:8px;border-radius:50%;background:#a3a3a3}.table-detail-state.is-busy i{background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.12)}
+.table-detail-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.table-detail-summary>div{display:flex;flex-direction:column;gap:6px;padding:13px;border:1px solid hsl(var(--border));border-radius:13px;background:hsl(var(--card))}
+.table-detail-summary small,.table-detail-footer small{font-size:10px;color:hsl(var(--muted-foreground))}.table-detail-summary b{font-size:15px}
+.table-detail-summary .table-detail-due{background:#eff7f0;border-color:#c8dfcb;color:#1d5c32}
+.table-order-history{display:grid;gap:11px}.table-history-card{padding:15px;border:1px solid hsl(var(--border));border-radius:15px;background:hsl(var(--card))}
+.table-history-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.table-history-head>div{display:flex;flex-direction:column;gap:3px}
+.table-history-head small,.table-history-paid{font-size:10px;color:hsl(var(--muted-foreground))}
+.table-history-line{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid hsl(var(--border));font-size:12px}.table-history-line small{color:hsl(var(--muted-foreground))}
+.table-history-line>b,.table-history-total>b{font-variant-numeric:tabular-nums}.table-history-total{display:flex;justify-content:space-between;align-items:center;padding-top:11px;font-size:12px;font-weight:700}
+.table-detail-footer{position:sticky;bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid #c8dfcb;border-radius:15px;background:rgba(245,250,245,.97);box-shadow:0 8px 25px rgba(20,40,25,.09);backdrop-filter:blur(12px)}
+.table-detail-footer>div{display:flex;flex-direction:column;gap:3px}.table-detail-footer b{font-size:18px;color:#1d5c32}
+.service-page-intro{display:flex;align-items:center;justify-content:space-between;padding:17px;border:1px solid hsl(var(--border));border-radius:17px;background:hsl(var(--card))}
+.service-page-intro h2{margin:4px 0;font-size:20px}.service-page-intro small{font-size:11px;color:hsl(var(--muted-foreground))}
+.service-page-intro>b{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#edf4ed;color:#245c3c;font-size:18px}
+.service-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:5px;border-radius:13px;background:#f0f2ed}
+.service-tabs button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:43px;border:0;border-radius:10px;background:transparent;color:#58645d;font:inherit;font-size:12px;cursor:pointer}
+.service-tabs button.active{background:#fff;color:#24533a;font-weight:800;box-shadow:0 2px 9px rgba(20,40,25,.08)}
+.service-section-heading{display:flex;align-items:center;justify-content:space-between}.service-section-heading h3{margin:0;font-size:16px}.service-section-heading span{font-size:10px;color:hsl(var(--muted-foreground))}
+.service-order-list{display:grid;gap:8px}.service-order-row{display:grid;grid-template-columns:70px 1fr auto;align-items:center;gap:12px;padding:13px;border:1px solid hsl(var(--border));border-radius:13px;background:hsl(var(--card))}
+.service-table-number,.service-item-name{display:flex;flex-direction:column;gap:3px}.service-table-number small,.service-item-name small{font-size:9px;color:hsl(var(--muted-foreground))}
+.service-table-number b{font-size:17px;color:hsl(var(--primary))}.service-item-name b{font-size:13px}.service-order-row>strong{padding:7px 10px;border-radius:9px;background:#f3f4f0;font-size:13px}
+.picker-service-tabs{margin:8px 0 12px}
+@media(max-width:680px){.table-detail-head{grid-template-columns:1fr auto;gap:9px;padding:13px}.table-detail-head>.button:first-child{grid-column:1/-1;justify-self:start}.table-detail-head h2{font-size:25px}.table-detail-summary{grid-template-columns:1fr 1fr;gap:7px}.table-detail-summary>div{padding:10px}.table-detail-summary b{font-size:13px}.table-detail-footer{bottom:6px;padding:11px}.table-detail-footer b{font-size:15px}.service-page-intro{padding:13px}.service-order-row{grid-template-columns:55px 1fr auto;gap:8px;padding:11px}.service-table-number b{font-size:15px}}

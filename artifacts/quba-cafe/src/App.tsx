@@ -894,10 +894,9 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
       const number = index + 1;
       const table = allTables.find((item: AnyRecord) => Number(String(item.label || '').match(/\d+/)?.[0]) === number);
       if (!table) return <article className="table-tile table-tile-missing" key={number}><span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small></article>;
-      if (table.active === false) return <div className="table-tile-wrap" key={table.id} style={{ position: 'relative', minWidth: 0 }}>
-        <article className="table-tile table-tile-missing"><span className="table-tile-number">{number}</span><small>{t.tableClosed}</small></article>
-        <button type="button" className="button button-secondary small-button" style={{ width: '100%', marginTop: 6 }} disabled={deletingTableId === table.id} onClick={() => void removeTable(table)} data-testid={`button-delete-table-${number}`}><Trash2 size={14} />{locale === 'ku' ? 'لابردن' : 'إزالة'}</button>
-      </div>;
+      if (table.active === false) return <button type="button" className="table-tile table-tile-missing" key={table.id} style={{ width: '100%' }} onClick={() => setSelectedTableId(table.id)} data-testid={`button-table-${number}`}>
+        <span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small><span className="table-tile-action">{t.newOrder}<Plus size={14} /></span>
+      </button>;
       const order = data.orders.find((item: AnyRecord) => item.tableId === table.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(item.status)));
       const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
       const due = order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0;

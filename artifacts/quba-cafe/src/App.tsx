@@ -894,7 +894,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
       <div><small>{t.paidAmount}</small><b>{formatIQD(historyPaid, locale)}</b></div>
       <div className="table-detail-due"><small>{locale === 'ku' ? 'ماوەی هەموو حیسابەکان' : 'المتبقي على كل الطلبات'}</small><b>{formatIQD(historyRemaining, locale)}</b></div>
     </div>
-    {activeOrders.length > 0 && <div className="table-detail-footer"><div><small>{locale === 'ku' ? 'حیسابی داواکارییە چالاکەکان' : 'رصيد الطلبات النشطة'}</small><b>{formatIQD(remaining, locale)}</b></div></div> 
+    {activeOrders.length > 0 && <div className="table-detail-footer"><div><small>{locale === 'ku' ? 'حیسابی داواکارییە چالاکەکان' : 'رصيد الطلبات النشطة'}</small><b>{formatIQD(remaining, locale)}</b></div></div>}
     {tableOrders.length === 0 ? <EmptyState locale={locale} title={t.tableNoOrder} detail={locale === 'ku' ? 'داواکارییەک زیاد بکە بۆ ئەم مێزە.' : 'أضف طلباً لهذه الطاولة.'} /> :
       <div className="table-order-history">{tableOrders.map((order: AnyRecord) => {
         const paid = (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0);

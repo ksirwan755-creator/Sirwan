@@ -15,7 +15,7 @@ import {
   where,
   type DocumentData,
 } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured, ownerUid, createEmployeeAuthAccount, createEmployeeProfileRecords } from './firebase';
+import { auth, db, isFirebaseConfigured, ownerUid, createEmployeeAuthAccount } from './firebase';
 import type {
   CafeCategory,
   CafeCustomer,
@@ -162,7 +162,7 @@ function validateRecord(name: RecordCollection, data: Record<string, unknown>, p
   }
 }
 
-export async function createEmployee(input: { name: string; phoneE164: string; password: string; assignedTableIds: string[]; assignedTables: { id: string; label: string }[] }): Promise<void> {
+export async function createEmployee(input: { name: string; phoneE164: string; password: string; assignedTableIds: string[]; assignedTables: { id: string; label: string }[]; active?: boolean }): Promise<void> {
   assertOwner();
   if (!db) throw new Error('Firebase is not configured.');
   const phoneE164 = input.phoneE164.trim();
@@ -181,7 +181,7 @@ export async function createEmployee(input: { name: string; phoneE164: string; p
     name: input.name.trim(),
     assignedTableIds: [...new Set(input.assignedTableIds)],
     assignedTables: input.assignedTables,
-    active: true,
+    active: input.active ?? (existing.exists() ? existing.data().active !== false : true),
     createdAt,
     updatedAt: now,
   };

@@ -31,7 +31,8 @@ service cloud.firestore {
 
     match /owners/{ownerUid}/orders/{recordId} {
       allow read: if isOwner(ownerUid)
-        || employeeCanReadTable(ownerUid, resource.data.tableId);
+        || (employeeCanReadTable(ownerUid, resource.data.tableId)
+          && resource.data.status in ['new', 'preparing', 'ready', 'delivered']);
       allow create, update, delete: if isOwner(ownerUid);
     }
 

@@ -812,12 +812,30 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(true);
   useEffect(() => {
     let active = true;
     actions.ensureDefaultTables().catch(() => { if (active) notify(t.serverError); }).finally(() => { if (active) setPreparing(false); });
     return () => { active = false; };
   }, []);
+  async function removeTable(table: AnyRecord) {
+    const isKu = locale === 'ku';
+    const message = isKu
+      ? `دڵنیایت دەتەوێت مێزی ژمارە ${table.label} لاببەیت؟ مێژووی داواکارییە کۆنەکان دەمێنێتەوە.`
+      : `هل تريد إزالة الطاولة رقم ${table.label}؟ سيبقى سجل الطلبات السابقة محفوظاً.`;
+    if (!window.confirm(message) || deletingTableId) return;
+    setDeletingTableId(table.id);
+    try {
+      await actions.deleteRecord('tables', table.id);
+      if (selectedTableId === table.id) setSelectedTableId(null);
+      notify(isKu ? 'مێزەکە لابرا' : 'تمت إزالة الطاولة');
+    } catch (error) {
+      notify(recordActionError(error, t));
+    } finally {
+      setDeletingTableId(null);
+    }
+  }
   const allTables = [...data.tables];
   const selectedTable = allTables.find((table: AnyRecord) => table.id === selectedTableId) || null;
   const tables = allTables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => Number(String(a.label || '').match(/\d+/)?.[0] || 999) - Number(String(b.label || '').match(/\d+/)?.[0] || 999));
@@ -862,15 +880,21 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
       const number = index + 1;
       const table = allTables.find((item: AnyRecord) => Number(String(item.label || '').match(/\d+/)?.[0]) === number);
       if (!table) return <article className="table-tile table-tile-missing" key={number}><span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small></article>;
-      if (table.active === false) return <article className="table-tile table-tile-missing" key={table.id}><span className="table-tile-number">{number}</span><small>{t.tableClosed}</small></article>;
+      if (table.active === false) return <div className="table-tile-wrap" key={table.id} style={{ position: 'relative', minWidth: 0 }}>
+        <article className="table-tile table-tile-missing"><span className="table-tile-number">{number}</span><small>{t.tableClosed}</small></article>
+        <button type="button" className="button button-secondary small-button" style={{ width: '100%', marginTop: 6 }} disabled={deletingTableId === table.id} onClick={() => void removeTable(table)} data-testid={`button-delete-table-${number}`}><Trash2 size={14} />{locale === 'ku' ? 'لابردن' : 'إزالة'}</button>
+      </div>;
       const order = data.orders.find((item: AnyRecord) => item.tableId === table.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(item.status)));
       const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
       const due = order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0;
-      return <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} key={table.id} onClick={() => setSelectedTableId(table.id)} data-testid={`button-table-${number}`}>
-        <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span><strong className="table-tile-number">{number}</strong>
-        {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><b className="table-tile-balance">{formatIQD(due, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
-        <span className="table-tile-action">{order ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
-      </button>;
+      return <div className="table-tile-wrap" key={table.id} style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} style={{ width: '100%', flex: 1 }} onClick={() => setSelectedTableId(table.id)} data-testid={`button-table-${number}`}>
+          <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span><strong className="table-tile-number">{number}</strong>
+          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><b className="table-tile-balance">{formatIQD(due, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
+          <span className="table-tile-action">{order ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
+        </button>
+        <button type="button" className="button button-secondary small-button" style={{ width: '100%', marginTop: 6 }} disabled={deletingTableId === table.id} onClick={() => void removeTable(table)} data-testid={`button-delete-table-${number}`}><Trash2 size={14} />{deletingTableId === table.id ? t.loading : (locale === 'ku' ? 'لابردن' : 'إزالة')}</button>
+      </div>;
     })}</div>
   </>;
 }

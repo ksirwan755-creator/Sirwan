@@ -6,26 +6,31 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == ownerUid;
     }
 
-    function employeePath(ownerUid) {
-      return /databases/$(database)/documents/owners/$(ownerUid)/employees/$(request.auth.token.phone_number);
+    function employeeAccessPath(ownerUid) {
+      return /databases/$(database)/documents/owners/$(ownerUid)/employeeAccess/$(request.auth.uid);
     }
 
     function isActiveEmployee(ownerUid) {
       return request.auth != null
-        && request.auth.token.phone_number is string
-        && exists(employeePath(ownerUid))
-        && get(employeePath(ownerUid)).data.active == true;
+        && exists(employeeAccessPath(ownerUid))
+        && get(employeeAccessPath(ownerUid)).data.active == true;
     }
 
     function employeeCanReadTable(ownerUid, tableId) {
       return isActiveEmployee(ownerUid)
         && tableId != null
-        && tableId in get(employeePath(ownerUid)).data.assignedTableIds;
+        && tableId in get(employeeAccessPath(ownerUid)).data.assignedTableIds;
     }
 
     match /owners/{ownerUid}/employees/{phoneE164} {
       allow read: if isOwner(ownerUid)
-        || (request.auth != null && request.auth.token.phone_number == phoneE164);
+        || (request.auth != null && resource.data.authUid == request.auth.uid);
+      allow create, update, delete: if isOwner(ownerUid);
+    }
+
+    match /owners/{ownerUid}/employeeAccess/{employeeUid} {
+      allow read: if isOwner(ownerUid)
+        || (request.auth != null && request.auth.uid == employeeUid);
       allow create, update, delete: if isOwner(ownerUid);
     }
 

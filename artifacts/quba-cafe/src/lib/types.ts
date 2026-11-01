@@ -81,6 +81,16 @@ export interface CafeCustomer {
   updatedAt?: string;
 }
 
+export interface CafeEmployee {
+  phoneE164: string;
+  name: string;
+  assignedTableIds: string[];
+  assignedTables: { id: string; label: string }[];
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface CafeSettings {
   restaurantNameKu: string;
   restaurantNameAr: string;
@@ -94,6 +104,7 @@ export interface CafeDataSnapshot {
   orders: CafeOrder[];
   expenses: CafeExpense[];
   customers: CafeCustomer[];
+  employees: CafeEmployee[];
   settings: (CafeSettings & { id: string }) | null;
 }
 

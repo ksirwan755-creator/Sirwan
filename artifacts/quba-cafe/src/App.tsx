@@ -343,13 +343,35 @@ function SetupNotice({ locale, onLocale }: { locale: Locale; onLocale: (locale: 
 
 function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale; onLocale: (locale: Locale) => void; authError: string; onSignIn: (email: string, password: string) => Promise<void> }) {
   const t = copy[locale];
+  const [mode, setMode] = useState<'owner' | 'employee'>('owner');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [smsCode, setSmsCode] = useState('');
+  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
+  const [localError, setLocalError] = useState('');
   const [busy, setBusy] = useState(false);
-  async function submit(event: FormEvent) {
+
+  async function submitOwner(event: FormEvent) {
     event.preventDefault(); setBusy(true);
     await onSignIn(email.trim(), password);
     setBusy(false);
+  }
+  async function sendCode() {
+    setBusy(true); setLocalError('');
+    try {
+      const result = await startEmployeePhoneLogin(phone);
+      setConfirmation(result);
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : t.loginError);
+    } finally { setBusy(false); }
+  }
+  async function verifyCode(event: FormEvent) {
+    event.preventDefault(); if (!confirmation) return;
+    setBusy(true); setLocalError('');
+    try { await confirmation.confirm(smsCode.trim()); }
+    catch { setLocalError(locale === 'ku' ? 'کۆدەکە هەڵەیە یان بەسەرچووە؛ دووبارە هەوڵ بدەرەوە.' : 'الرمز غير صحيح أو منتهي الصلاحية؛ حاول مجدداً.'); }
+    finally { setBusy(false); }
   }
   return <main className="gate-shell" dir="rtl">
     <div className="gate-top"><Brand locale={locale} /><LocaleSwitch locale={locale} onLocale={onLocale} /></div>
@@ -361,20 +383,40 @@ function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale
         <p>{locale === 'ku' ? 'لە مێزەوە تا پارەدان، بە ڕوونی بەڕێوەی بەرە.' : 'من الطاولة إلى الدفع، إدارة واضحة من البداية.'}</p>
         <div className="story-line"><span /> {locale === 'ku' ? 'ئامادەیە بۆ ڕۆژێکی باش' : 'جاهز ليوم عمل هادئ'}</div>
       </section>
-      <form className="gate-card login-card" onSubmit={submit}>
+      <section className="gate-card login-card">
         <span className="gate-icon"><Coffee size={23} /></span>
         <h2>{t.loginTitle}</h2><p className="gate-copy">{t.loginText}</p>
-        <label className="field-label" htmlFor="owner-email">{t.email}</label>
-        <input id="owner-email" data-testid="input-email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
-        <label className="field-label" htmlFor="owner-password">{t.password}</label>
-        <input id="owner-password" data-testid="input-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
-        {authError && <div className="inline-error" role="alert" data-testid="status-auth-error">{authError}</div>}
-        <button className="button button-primary login-submit" type="submit" disabled={busy} data-testid="button-login">{busy && <LoaderCircle className="spin" size={16} />}{t.login}<ArrowUpRight size={16} /></button>
-      </form>
+        <div className="login-mode-tabs">
+          <button type="button" className={mode === 'owner' ? 'active' : ''} onClick={() => { setMode('owner'); setLocalError(''); }}>{locale === 'ku' ? 'خاوەن' : 'المالك'}</button>
+          <button type="button" className={mode === 'employee' ? 'active' : ''} onClick={() => { setMode('employee'); setLocalError(''); setConfirmation(null); }}>{locale === 'ku' ? 'کارمەند' : 'موظف'}</button>
+        </div>
+        {mode === 'owner' ? <form onSubmit={submitOwner}>
+          <label className="field-label" htmlFor="owner-email">{t.email}</label>
+          <input id="owner-email" data-testid="input-email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
+          <label className="field-label" htmlFor="owner-password">{t.password}</label>
+          <input id="owner-password" data-testid="input-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
+          {authError && <div className="inline-error" role="alert" data-testid="status-auth-error">{authError}</div>}
+          <button className="button button-primary login-submit" type="submit" disabled={busy} data-testid="button-login">{busy && <LoaderCircle className="spin" size={16} />}{t.login}<ArrowUpRight size={16} /></button>
+        </form> : <div>
+          {!confirmation ? <>
+            <p className="employee-login-hint">{locale === 'ku' ? 'ژمارەی مۆبایلەکەت بە کۆدی وڵات بنووسە؛ نموونە: +9647XXXXXXXXX' : 'أدخل رقم هاتفك مع رمز الدولة، مثال: +9647XXXXXXXXX'}</p>
+            <label className="field-label" htmlFor="employee-phone">{t.phone}</label>
+            <input id="employee-phone" data-testid="input-employee-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+9647XXXXXXXXX" required value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+            <div id="employee-recaptcha" className="employee-recaptcha" />
+            <button className="button button-primary login-submit" type="button" disabled={busy || !phone.trim()} onClick={() => void sendCode()}>{busy && <LoaderCircle className="spin" size={16} />}{locale === 'ku' ? 'ناردنی کۆدی SMS' : 'إرسال رمز SMS'}<ArrowUpRight size={16} /></button>
+          </> : <form onSubmit={verifyCode}>
+            <p className="employee-login-hint">{locale === 'ku' ? 'کۆدی نێردراو بۆ مۆبایلەکەت بنووسە.' : 'أدخل الرمز الذي أُرسل إلى هاتفك.'}</p>
+            <label className="field-label" htmlFor="employee-code">{locale === 'ku' ? 'کۆدی پشتڕاستکردنەوە' : 'رمز التحقق'}</label>
+            <input id="employee-code" data-testid="input-employee-code" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required value={smsCode} onChange={(e) => setSmsCode(e.target.value)} dir="ltr" />
+            <button className="button button-primary login-submit" type="submit" disabled={busy || smsCode.trim().length < 6}>{busy && <LoaderCircle className="spin" size={16} />}{locale === 'ku' ? 'پشتڕاستکردنەوە و چوونەژوورەوە' : 'تأكيد وتسجيل الدخول'}<ArrowUpRight size={16} /></button>
+            <button className="button button-quiet login-submit" type="button" disabled={busy} onClick={() => { setConfirmation(null); setSmsCode(''); }}>{locale === 'ku' ? 'گۆڕینی ژمارە' : 'تغيير الرقم'}</button>
+          </form>}
+          {(localError || authError) && <div className="inline-error" role="alert" data-testid="status-auth-error">{localError || authError}</div>}
+        </div>}
+      </section>
     </div>
   </main>;
 }
-
 function Brand({ locale }: { locale: Locale }) {
   return <div className="brand"><span className="brand-symbol"><span /><span /><span /></span><span className="brand-type"><b>QUBA</b><small>{copy[locale].subbrand}</small></span></div>;
 }

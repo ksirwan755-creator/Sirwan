@@ -200,7 +200,7 @@ export async function ensureDefaultTables(): Promise<void> {
   const now = new Date().toISOString();
   for (let number = 1; number <= 40; number += 1) {
     if (existingNumbers.has(number)) continue;
-    const tableRef = doc(ownerCollection('tables), `quba-table-${String(number).padStart(2, '0')}`);
+    const tableRef = doc(ownerCollection('tables'), `quba-table-${String(number).padStart(2, '0')}`);
     const existingDoc = await getDoc(tableRef);
     if (existingDoc.exists()) continue;
     await setDoc(tableRef, {

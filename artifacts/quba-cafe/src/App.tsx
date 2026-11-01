@@ -433,7 +433,8 @@ function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profil
 
   useEffect(() => {
     if (!db || !ownerUid || !profile.phoneE164) { setLoading(false); return; }
-    const employeeRef = doc(db, 'owners', ownerUid, 'employees', profile.phoneE164);
+    const firestore = db;
+    const employeeRef = doc(firestore, 'owners', ownerUid, 'employees', profile.phoneE164);
     const stopEmployee = onSnapshot(employeeRef, (snapshot) => {
       if (!snapshot.exists() || snapshot.data().active !== true) void signOutOwner();
     }, () => { void signOutOwner(); });
@@ -447,7 +448,7 @@ function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profil
     const chunks: string[][] = [];
     for (let i = 0; i < assignedIds.length; i += 7) chunks.push(assignedIds.slice(i, i + 7));
     chunks.forEach((chunk, index) => {
-      const ordersQuery = query(collection(db, 'owners', ownerUid, 'orders'), where('tableId', 'in', chunk), where('status', 'in', ['new', 'preparing', 'ready', 'delivered']));
+      const ordersQuery = query(collection(firestore, 'owners', ownerUid, 'orders'), where('tableId', 'in', chunk), where('status', 'in', ['new', 'preparing', 'ready', 'delivered']));
       const stop = onSnapshot(ordersQuery, (snapshot) => {
         groups.set(index, snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
         setOrders([...groups.values()].flat().filter((order) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status))).sort((a, b) => asDate(b.createdAt).getTime() - asDate(a.createdAt).getTime()));

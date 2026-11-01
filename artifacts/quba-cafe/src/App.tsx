@@ -445,9 +445,9 @@ function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profil
     const groups = new Map<number, AnyRecord[]>();
     const stops: (() => void)[] = [];
     const chunks: string[][] = [];
-    for (let i = 0; i < assignedIds.length; i += 30) chunks.push(assignedIds.slice(i, i + 30));
+    for (let i = 0; i < assignedIds.length; i += 7) chunks.push(assignedIds.slice(i, i + 7));
     chunks.forEach((chunk, index) => {
-      const ordersQuery = query(collection(db, 'owners', ownerUid, 'orders'), where('tableId', 'in', chunk));
+      const ordersQuery = query(collection(db, 'owners', ownerUid, 'orders'), where('tableId', 'in', chunk), where('status', 'in', ['new', 'preparing', 'ready', 'delivered']));
       const stop = onSnapshot(ordersQuery, (snapshot) => {
         groups.set(index, snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
         setOrders([...groups.values()].flat().filter((order) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status))).sort((a, b) => asDate(b.createdAt).getTime() - asDate(a.createdAt).getTime()));

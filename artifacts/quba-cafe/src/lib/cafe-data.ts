@@ -354,10 +354,19 @@ export async function createOrder(input: CreateOrderInput): Promise<string> {
     if (activeOrders.length > 0) {
       activeOrders.sort((a, b) => String(a.data.createdAt || '').localeCompare(String(b.data.createdAt || '')));
       const primary = activeOrders[0];
-      const combinedItems = [
+      const rawCombinedItems = [
         ...activeOrders.flatMap((order) => order.data.items ?? []),
         ...items,
       ];
+      // Keep one line per product and unit price, adding quantities together.
+      const combinedItemMap = new Map<string, any>();
+      for (const item of rawCombinedItems) {
+        const itemKey = [item.productId || item.nameKu || item.nameAr || 'item', item.unitPriceIqd ?? 0, item.categoryId || ''].join('::');
+        const existing = combinedItemMap.get(itemKey);
+        if (existing) existing.quantity = Number(existing.quantity || 0) + Number(item.quantity || 0);
+        else combinedItemMap.set(itemKey, { ...item, quantity: Number(item.quantity || 0) });
+      }
+      const combinedItems = Array.from(combinedItemMap.values());
       const combinedTotal = combinedItems.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPriceIqd || 0), 0);
       assertWholeAmount(combinedTotal, 'Order total', true);
       const combinedPayments = activeOrders.flatMap((order) => order.data.payments ?? []);

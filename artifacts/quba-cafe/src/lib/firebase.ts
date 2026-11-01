@@ -64,6 +64,10 @@ export async function startEmployeePhoneLogin(phone: string): Promise<Confirmati
   if (!auth || !db || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
   const normalized = phone.trim();
   if (!/^\+[1-9]\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
+  const employeeSnapshot = await getDoc(doc(db, 'owners', ownerUid, 'employees', normalized));
+  if (!employeeSnapshot.exists() || employeeSnapshot.data().active !== true) {
+    throw new Error('This phone number is not registered as an active QUBA employee.');
+  }
   if (phoneRecaptcha) {
     phoneRecaptcha.clear();
     phoneRecaptcha = null;

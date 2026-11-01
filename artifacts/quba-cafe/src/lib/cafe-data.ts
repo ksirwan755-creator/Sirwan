@@ -306,7 +306,16 @@ export async function appendOrderItems(orderId: string, items: CreateOrderInput[
     if (!snapshot.exists()) throw new Error('Order not found.');
     const order = snapshot.data() as Omit<CafeOrder, 'id'>;
     if (order.status === 'paid' || order.status === 'cancelled') throw new Error('This table order is already closed.');
-    const nextItems = [...(order.items ?? []), ...items];
+    // Merge repeated additions of the same product into one row.
+    // Example: adding tea now and again later becomes Tea × 2, not two Tea rows.
+    const combinedMap = new Map<string, any>();
+    for (const item of [...(order.items ?? []), ...items]) {
+      const key = [item.productId || item.nameKu || item.nameAr || 'item', item.unitPriceIqd ?? 0, item.categoryId || ''].join('::');
+      const existing = combinedMap.get(key);
+      if (existing) existing.quantity = Number(existing.quantity || 0) + Number(item.quantity || 0);
+      else combinedMap.set(key, { ...item, quantity: Number(item.quantity || 0) });
+    }
+    const nextItems = Array.from(combinedMap.values());
     const nextTotal = nextItems.reduce((sum, item) => sum + item.quantity * item.unitPriceIqd, 0);
     assertWholeAmount(nextTotal, 'Order total', true);
     transaction.update(orderRef, {

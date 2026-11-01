@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUBA - داشبورد و بەڕێوەبردنی کافێ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Vazirmatn', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-emerald-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-amber-500 text-slate-900 font-extrabold text-xl w-9 h-9 rounded-xl flex items-center justify-center shadow-lg">
+                    Q
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-wide text-amber-400">QUBA</h1>
+                    <p class="text-[11px] text-slate-300">داشبوردی بەڕێوەبردن</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="switchView('dashboard')" id="nav-dash" class="bg-amber-500 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm">
+                    <i class="fa-solid fa-house"></i> پۆختە
+                </button>
+                <button onclick="switchView('pos')" id="nav-pos" class="bg-emerald-800 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-700">
+                    <i class="fa-solid fa-utensils"></i> مێزەکان
+                </button>
+                <button onclick="switchView('admin')" id="nav-admin" class="bg-emerald-800 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-emerald-700">
+                    <i class="fa-solid fa-users-gear"></i> کارمەند
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-3 py-4 flex-grow w-full">
+        
+        <!-- 1. DASHBOARD VIEW -->
+        <div id="view-dashboard" class="space-y-4">
+            <!-- Welcome Card -->
+            <div class="bg-gradient-to-r from-emerald-900 to-emerald-800 text-white rounded-2xl p-5 shadow-md relative overflow-hidden">
+                <div class="relative z-10">
+                    <span class="bg-emerald-700 text-emerald-200 text-[10px] px-2.5 py-1 rounded-full font-bold">بەخێرایی بۆ بەڕێوەبردنی قوبە</span>
+                    <h2 class="text-xl font-black text-amber-400 mt-2">ئێواره باش، QUBA</h2>
+                    <p class="text-xs text-slate-300 mt-1">هەموو ڕۆژەکەت لە یک شوێنەوە بەڕێوەبە.</p>
+                </div>
+            </div>
+
+            <!-- Quick Action Cards -->
+            <div class="grid grid-cols-3 gap-2.5">
+                <button onclick="switchView('pos')" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center hover:border-amber-400 transition">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-1.5 text-base">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <span class="font-bold text-xs text-slate-800">داواکاری نوێ</span>
+                    <span class="text-[10px] text-slate-400">تۆمارکردن</span>
+                </button>
+                <button onclick="switchView('pos')" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center hover:border-amber-400 transition">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-1.5 text-base">
+                        <i class="fa-solid fa-chair"></i>
+                    </div>
+                    <span class="font-bold text-xs text-slate-800">مێزەکان</span>
+                    <span class="text-[10px] text-slate-400">دۆخی مێز</span>
+                </button>
+                <button onclick="switchView('admin')" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center text-center hover:border-amber-400 transition">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mb-1.5 text-base">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <span class="font-bold text-xs text-slate-800">کارمەندان</span>
+                    <span class="text-[10px] text-slate-400">بەڕێوەبردن</span>
+                </button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <span class="text-slate-400 text-[11px] block">داواکارییە چالاکەکان</span>
+                    <h3 class="text-2xl font-black text-slate-900 mt-1" id="dash-active-orders">0</h3>
+                    <span class="text-[10px] text-amber-600 mt-1 block">لە ئامادەکردندا</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <span class="text-slate-400 text-[11px] block">داهاتی ئەمڕۆ</span>
+                    <h3 class="text-2xl font-black text-emerald-600 mt-1" id="dash-revenue">٠ د.ع</h3>
+                    <span class="text-[10px] text-slate-400 mt-1 block">کۆی فرۆش</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. POS / TABLES VIEW -->
+        <div id="view-pos" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div class="lg:col-span-8 flex flex-col gap-4">
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                    <h2 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-chair text-amber-500"></i> هەڵبژاردنی مێز:
+                    </h2>
+                    <div class="grid grid-cols-4 sm:grid-cols-6 gap-2.5" id="tables-grid"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+                    <h2 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-utensils text-amber-500"></i> مەنیوی خواردن:
+                    

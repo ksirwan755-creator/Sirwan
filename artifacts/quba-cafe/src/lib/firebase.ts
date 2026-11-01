@@ -4,7 +4,6 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  deleteUser,
   signOut,
   type Auth,
   type User,
@@ -76,15 +75,12 @@ export async function createEmployeeAuthAccount(phone: string, password: string)
   const secondaryName = 'quba-employee-provisioning';
   const secondaryApp = getApps().find((item) => item.name === secondaryName) ?? initializeApp(config, secondaryName);
   const secondaryAuth = getAuth(secondaryApp);
-  let createdUser: User | null = null;
   try {
     const result = await createUserWithEmailAndPassword(secondaryAuth, employeeLoginEmail(phone), password);
-    createdUser = result.user;
     return result.user.uid;
   } catch (error) {
     throw error;
   } finally {
-    if (createdUser) await deleteUser(createdUser).catch(() => undefined);
     await signOut(secondaryAuth).catch(() => undefined);
   }
 }

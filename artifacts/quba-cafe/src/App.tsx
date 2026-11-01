@@ -455,7 +455,15 @@ function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profil
         {orders.map((order) => <article className="panel employee-order-card" key={order.id}>
           <div className="employee-order-head"><b>{locale === 'ku' ? 'مێزی' : 'الطاولة'} {String(tableLabels.get(order.tableId) || '—')}</b><span className="status-badge badge-open">{orderStatusLabel(order.status, locale, t)}</span></div>
           <small>{dateText(order.createdAt, locale)}</small>
-          <div className="employee-order-items">{(order.items || []).map((item: AnyRecord, index: number) => <div key={index}><span>{localized(item, locale) || item.nameKu || item.nameAr}</span><b>× {item.quantity}</b></div>)}</div>
+          {(() => {
+            const items = order.items || [];
+            const beverages = items.filter((item: AnyRecord) => item.categoryId === '__quba_beverage__');
+            const foods = items.filter((item: AnyRecord) => item.categoryId !== '__quba_beverage__');
+            return <div className="employee-order-items employee-order-items-split">
+              {foods.length > 0 && <section><b className="employee-order-kind"><Utensils size={14} />{locale === 'ku' ? 'خواردن' : 'الطعام'}</b>{foods.map((item: AnyRecord, index: number) => <div key={'food-' + index}><span>{localized(item, locale) || item.nameKu || item.nameAr}</span><b>× {item.quantity}</b></div>)}</section>}
+              {beverages.length > 0 && <section><b className="employee-order-kind"><Coffee size={14} />{locale === 'ku' ? 'خواردنەوە' : 'المشروبات'}</b>{beverages.map((item: AnyRecord, index: number) => <div key={'drink-' + index}><span>{localized(item, locale) || item.nameKu || item.nameAr}</span><b>× {item.quantity}</b></div>)}</section>}
+            </div>;
+          })()}
           {order.notes && <p className="order-note">{order.notes}</p>}
         </article>)}
       </div>}
@@ -893,10 +901,12 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
       const order = data.orders.find((item: AnyRecord) => item.tableId === table.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(item.status)));
       const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
       const due = order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0;
+      const beverageQty = order ? (order.items || []).filter((item: AnyRecord) => (data.products.find((product: AnyRecord) => product.id === item.productId)?.categoryId || item.categoryId) === '__quba_beverage__').reduce((sum: number, item: AnyRecord) => sum + Number(item.quantity || 0), 0) : 0;
+      const foodQty = order ? (order.items || []).filter((item: AnyRecord) => (data.products.find((product: AnyRecord) => product.id === item.productId)?.categoryId || item.categoryId) !== '__quba_beverage__').reduce((sum: number, item: AnyRecord) => sum + Number(item.quantity || 0), 0) : 0;
       return <div className="table-tile-wrap" key={table.id} style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} style={{ width: '100%', flex: 1 }} onClick={() => setSelectedTableId(table.id)} data-testid={`button-table-${number}`}>
           <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span><strong className="table-tile-number">{number}</strong>
-          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><b className="table-tile-balance">{formatIQD(due, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
+          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><span className="table-tile-summary">{locale === 'ku' ? 'خواردن' : 'طعام'}: {foodQty} · {locale === 'ku' ? 'خواردنەوە' : 'مشروبات'}: {beverageQty}</span><b className="table-tile-balance">{formatIQD(due, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
           <span className="table-tile-action">{order ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
         </button>
         <button type="button" className="button button-secondary small-button" style={{ width: '100%', marginTop: 6 }} disabled={deletingTableId === table.id} onClick={() => void removeTable(table)} data-testid={`button-delete-table-${number}`}><Trash2 size={14} />{deletingTableId === table.id ? t.loading : (locale === 'ku' ? 'لابردن' : 'إزالة')}</button>

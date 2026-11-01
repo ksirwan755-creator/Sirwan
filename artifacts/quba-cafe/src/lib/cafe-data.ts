@@ -184,6 +184,57 @@ export async function upsertCustomer(input: { name?: string; phone?: string; not
   return created.id;
 }
 
+export async function ensureDefaultTables(): Promise<void> {
+  assertOwner();
+  const snapshot = await getDocs(ownerCollection('tables'));
+  const existingNumbers = new Set<number>();
+  snapshot.docs.forEach((item) => {
+    const label = String(item.data().label ?? '');
+    const match = label.match(/\\d+/);
+    if (match) {
+      const number = Number(match[0]);
+      if (number >= 1 && number <= 40) existingNumbers.add(number);
+    }
+  });
+  const now = new Date().toISOString();
+  for (let number = 1; number <= 40; number += 1) {
+    if (existingNumbers.has(number)) continue;
+    await addDoc(ownerCollection('tables'), {
+      label: String(number),
+      seats: 4,
+      status: 'available',
+      active: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
+
+export async function appendOrderItems(orderId: string, items: CreateOrderInput['items']): Promise<void> {
+  assertOwner();
+  if (!db) throw new Error('Firebase is not configured for this app.');
+  if (!items.length) throw new Error('Add at least one item to the order.');
+  items.forEach((item) => {
+    if (!Number.isSafeInteger(item.quantity) || item.quantity < 1) throw new Error('Item quantity must be a positive whole number.');
+    assertWholeAmount(item.unitPriceIqd, 'Item price', true);
+  });
+  const orderRef = doc(ownerCollection('orders'), orderId);
+  await runTransaction(db, async (transaction) => {
+    const snapshot = await transaction.get(orderRef);
+    if (!snapshot.exists()) throw new Error('Order not found.');
+    const order = snapshot.data() as Omit<CafeOrder, 'id'>;
+    if (order.status === 'paid' || order.status === 'cancelled') throw new Error('This table order is already closed.');
+    const nextItems = [...(order.items ?? []), ...items];
+    const nextTotal = nextItems.reduce((sum, item) => sum + item.quantity * item.unitPriceIqd, 0);
+    assertWholeAmount(nextTotal, 'Order total', true);
+    transaction.update(orderRef, {
+      items: nextItems,
+      totalIqd: nextTotal,
+      updatedAt: new Date().toISOString(),
+    });
+  });
+}
+
 export async function createOrder(input: CreateOrderInput): Promise<string> {
   assertOwner();
   if (input.items.length === 0) {

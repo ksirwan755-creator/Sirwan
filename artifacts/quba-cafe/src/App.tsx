@@ -63,7 +63,7 @@ const copy = {
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
     recentOrders: 'دوایین داواکارییەکان', viewAll: 'بینینی هەموو', noOrders: 'هێشتا داواکارییەک نییە',
     startOrder: 'داواکارییەکان لێرە دەردەکەون کاتێک تۆمار کران.',
-    tableNumber: 'مێزی ژمارە', tableAddItems: 'زیادکردنی خواردن و خواردنەوە', tableCurrentOrder: 'داواکاریی ئێستا', tableNoOrder: 'ئەم مێزە بەتاڵە', tableBalance: 'ماوەی حیساب', tableTotal: 'کۆی داواکاری', tableAutoCreate: 'مێزەکان ئامادە دەکرێن...',
+    tableNumber: 'مێزی ژمارە', closeTable: 'داخستنی مێز و بەتاڵکردنەوە', confirmCloseTable: 'دڵنیایت؟ مێزەکە بۆ کڕیاری نوێ بەردەست دەبێت و مێژووی داواکارییەکان دەمێنێتەوە.', tableClosedSuccess: 'مێزەکە بەردەستە بۆ کڕیاری نوێ', tableAddItems: 'زیادکردنی خواردن و خواردنەوە', tableCurrentOrder: 'داواکاریی ئێستا', tableNoOrder: 'ئەم مێزە بەتاڵە', tableBalance: 'ماوەی حیساب', tableTotal: 'کۆی داواکاری', tableAutoCreate: 'مێزەکان ئامادە دەکرێن...',
     backToTables: 'گەڕانەوە بۆ مێزەکان', tableHistory: 'هەموو داواکارییەکانی ئەم مێزە', currentBalance: 'کۆی پارەی ماوە', foodService: 'خواردن', beverageService: 'خواردنەوە', serviceTitle: 'داواکارییەکانی ئامادەکردن', noServiceItems: 'هیچ داواکارییەکی چالاک نییە',
     emptyTitle: 'هێشتا هیچ تۆمارێک نییە', emptyText: 'کاتێک تۆمارێک زیاد بکەیت، لێرە دەردەکەوێت.',
     add: 'زیادکردن', addItem: 'زیادکردنی بەرهەم', search: 'گەڕان', name: 'ناو', nameKu: 'ناو بە کوردی', nameAr: 'ناو بە عەرەبی',
@@ -108,7 +108,7 @@ const copy = {
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
     recentOrders: 'أحدث الطلبات', viewAll: 'عرض الكل', noOrders: 'لا توجد طلبات بعد',
     startOrder: 'ستظهر الطلبات هنا عند تسجيلها.',
-    tableNumber: 'الطاولة رقم', tableAddItems: 'إضافة طعام ومشروبات', tableCurrentOrder: 'الطلب الحالي', tableNoOrder: 'هذه الطاولة فارغة', tableBalance: 'المبلغ المتبقي', tableTotal: 'إجمالي الطلب', tableAutoCreate: 'جارٍ تجهيز الطاولات...',
+    tableNumber: 'الطاولة رقم', closeTable: 'إنهاء الطاولة وإخلاؤها', confirmCloseTable: 'هل أنت متأكد؟ ستصبح الطاولة متاحة لزبون جديد وسيبقى سجل الطلبات محفوظاً.', tableClosedSuccess: 'أصبحت الطاولة متاحة لزبون جديد', tableAddItems: 'إضافة طعام ومشروبات', tableCurrentOrder: 'الطلب الحالي', tableNoOrder: 'هذه الطاولة فارغة', tableBalance: 'المبلغ المتبقي', tableTotal: 'إجمالي الطلب', tableAutoCreate: 'جارٍ تجهيز الطاولات...',
     backToTables: 'العودة إلى الطاولات', tableHistory: 'كل طلبات هذه الطاولة', currentBalance: 'إجمالي المبلغ المتبقي', foodService: 'الطعام', beverageService: 'المشروبات', serviceTitle: 'طلبات التحضير', noServiceItems: 'لا توجد طلبات نشطة',
     emptyTitle: 'لا توجد سجلات بعد', emptyText: 'ستظهر السجلات هنا بعد إضافتها.',
     add: 'إضافة', addItem: 'إضافة عنصر للقائمة', search: 'بحث', name: 'الاسم', nameKu: 'الاسم بالكردية', nameAr: 'الاسم بالعربية',
@@ -874,6 +874,28 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const historyTotal = tableOrders.reduce((sum: number, order: AnyRecord) => sum + Number(order.totalIqd || 0), 0);
   const historyPaid = tableOrders.reduce((sum: number, order: AnyRecord) => sum + (order.payments || []).reduce((paid: number, payment: AnyRecord) => paid + Number(payment.amountIqd || 0), 0), 0);
   const historyRemaining = Math.max(0, historyTotal - historyPaid);
+  async function closeSelectedTable() {
+    if (!selectedTable || busy) return;
+    const allActiveOrdersPaid = activeOrders.every((order: AnyRecord) => {
+      const paid = (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0);
+      return paid >= Number(order.totalIqd || 0);
+    });
+    if (!allActiveOrdersPaid) {
+      notify(locale === 'ku' ? 'سەرەتا هەموو حیسابەکانی ئەم مێزە تەواو بکە.' : 'يرجى تسديد جميع حسابات هذه الطاولة أولاً.');
+      return;
+    }
+    if (!window.confirm(t.confirmCloseTable)) return;
+    setBusy(true);
+    try {
+      for (const order of activeOrders) await actions.updateOrderStatus(order.id, 'paid');
+      await actions.updateTableStatus(selectedTable.id, 'available');
+      notify(t.tableClosedSuccess);
+    } catch (error) {
+      notify(recordActionError(error, t));
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submitItems(payload: AnyRecord) {
     if (!selectedTable) return;
     setBusy(true);
@@ -886,7 +908,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     <div className="table-detail-head">
       <button type="button" className="button button-quiet" onClick={() => setSelectedTableId(null)}>‹ {t.backToTables}</button>
       <div><span className="table-detail-kicker">QUBA · {t.tableNumber}</span><h2>{selectedTable.label}</h2><span className={activeOrders.length ? 'table-detail-state is-busy' : 'table-detail-state'}><i />{activeOrders.length ? t.tableOccupied : t.tableAvailable}</span></div>
-      <button type="button" className="button button-primary" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button type="button" className="button button-secondary" disabled={busy || !activeOrders.every((order: AnyRecord) => (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) >= Number(order.totalIqd || 0))} onClick={() => void closeSelectedTable()}>{busy ? <LoaderCircle className="spin" size={15} /> : <X size={15} />}{t.closeTable}</button><button type="button" className="button button-primary" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button></div>
     </div>
     <div className="table-detail-summary">
       <div><small>{locale === 'ku' ? 'کۆی داواکارییەکان' : 'عدد الطلبات'}</small><b>{tableOrders.length}</b></div>

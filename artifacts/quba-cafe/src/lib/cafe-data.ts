@@ -206,6 +206,19 @@ export async function deactivateEmployee(phoneE164: string): Promise<void> {
   await updateEmployee(phoneE164, { active: false });
 }
 
+export async function deleteEmployee(phoneE164: string): Promise<void> {
+  assertOwner();
+  if (!db) throw new Error('Firebase is not configured.');
+  const employeeRef = doc(db, 'owners', ownerUid, 'employees', phoneE164);
+  const snapshot = await getDoc(employeeRef);
+  if (!snapshot.exists()) throw new Error('Employee record not found.');
+  const uid = String(snapshot.data().authUid || '');
+  if (uid) {
+    await deleteDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid));
+  }
+  await deleteDoc(employeeRef);
+}
+
 export async function upsertCustomer(input: { name?: string; phone?: string; notes?: string }): Promise<string | null> {
   assertOwner();
   const name = input.name?.trim() ?? '';
@@ -575,6 +588,7 @@ export function useCafeData() {
     createEmployee,
     updateEmployee,
     deactivateEmployee,
+    deleteEmployee,
     saveSettings,
   };
 }

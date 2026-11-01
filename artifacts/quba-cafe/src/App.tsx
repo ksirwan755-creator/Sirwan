@@ -417,7 +417,7 @@ function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profil
   useEffect(() => {
     if (!db || !ownerUid || !profile.phoneE164) { setLoading(false); return; }
     const firestore = db;
-    const employeeRef = doc(firestore, 'owners', ownerUid, 'employees', profile.phoneE164);
+    const employeeRef = doc(firestore, 'owners', ownerUid, 'employeeAccess', profile.authUid);
     const stopEmployee = onSnapshot(employeeRef, (snapshot) => {
       if (!snapshot.exists() || snapshot.data().active !== true) void signOutOwner();
     }, () => { void signOutOwner(); });
@@ -441,7 +441,7 @@ function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profil
       stops.push(stop);
     });
     return () => { stopEmployee(); stops.forEach((stop) => stop()); };
-  }, [profile.phoneE164, assignedIds.join('|')]);
+  }, [profile.authUid, assignedIds.join('|')]);
 
   async function leave() { if (signingOut) return; setSigningOut(true); try { await onSignOut(); } finally { setSigningOut(false); } }
   return <main className="gate-shell employee-orders-shell" dir="rtl">

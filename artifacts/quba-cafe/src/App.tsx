@@ -4,8 +4,9 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCafeData } from '@/lib/cafe-data';
-import { isFirebaseConfigured, listenForOwnerAuth, ownerUid, signInOwner, signOutOwner } from '@/lib/firebase';
-import type { User } from 'firebase/auth';
+import { getActiveEmployeeProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signOutOwner, startEmployeePhoneLogin, db } from '@/lib/firebase';
+import type { User, ConfirmationResult } from 'firebase/auth';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
   ChevronDown, CircleAlert, ClipboardList, Coffee, CreditCard, FileBarChart2,
@@ -139,6 +140,7 @@ const navItems = [
   { path: '/categories', key: 'categories', icon: Boxes },
   { path: '/tables', key: 'tables', icon: Utensils },
   { path: '/customers', key: 'customers', icon: Users },
+  { path: '/employees', key: 'employees', icon: Users },
   { path: '/expenses', key: 'expenses', icon: Wallet },
   { path: '/reports', key: 'reports', icon: FileBarChart2 },
   { path: '/settings', key: 'settings', icon: Settings2 },
@@ -192,6 +194,7 @@ function orderStatusLabel(status: string | null | undefined, locale: Locale, t: 
 function App() {
   const [locale, setLocale] = useState<Locale>('ku');
   const [user, setUser] = useState<User | null>(null);
+  const [employeeProfile, setEmployeeProfile] = useState<AnyRecord | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState('');
 
@@ -201,9 +204,39 @@ function App() {
   }, [locale]);
   useEffect(() => {
     if (!isFirebaseConfigured) { setAuthReady(true); return; }
-    return listenForOwnerAuth((nextUser) => {
-      setUser(nextUser);
-      setAuthReady(true);
+    return listenForAppAuth(async (nextUser) => {
+      if (!nextUser) {
+        setUser(null);
+        setEmployeeProfile(null);
+        setAuthReady(true);
+        return;
+      }
+      if (nextUser.uid === ownerUid) {
+        setUser(nextUser);
+        setEmployeeProfile(null);
+        setAuthReady(true);
+        return;
+      }
+      try {
+        const profile = await getActiveEmployeeProfile(nextUser);
+        if (profile) {
+          setUser(nextUser);
+          setEmployeeProfile(profile);
+          setAuthReady(true);
+        } else {
+          await signOutOwner();
+          setUser(null);
+          setEmployeeProfile(null);
+          setAuthError(copy[locale].notOwner);
+          setAuthReady(true);
+        }
+      } catch {
+        await signOutOwner();
+        setUser(null);
+        setEmployeeProfile(null);
+        setAuthError(copy[locale].notOwner);
+        setAuthReady(true);
+      }
     });
   }, []);
 
@@ -229,6 +262,7 @@ function App() {
       }
     } catch { setAuthError(t.loginError); }
   }} />;
+  if (employeeProfile) return <EmployeeOrdersScreen profile={employeeProfile} locale={locale} onLocale={setLocale} onSignOut={handleSignOut} />;
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

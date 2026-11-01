@@ -615,8 +615,8 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     return () => { active = false; };
   }, []);
   const tables = [...data.tables].filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => {
-    const na = Number(String(a.label || '').match(/\\d+/)?.[0] || 999);
-    const nb = Number(String(b.label || '').match(/\\d+/)?.[0] || 999);
+    const na = Number(String(a.label || '').match(/\d+/)?.[0] || 999);
+    const nb = Number(String(b.label || '').match(/\d+/)?.[0] || 999);
     return na - nb;
   });
   const activeOrderFor = (tableId: string) => data.orders.find((order: AnyRecord) => order.tableId === tableId && !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)));
@@ -637,7 +637,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     {preparing && tables.length === 0 ? <div className="tables-loading">{t.tableAutoCreate}</div> : <div className="tables-grid">
       {Array.from({ length: 40 }, (_, index) => {
         const number = index + 1;
-        const table = tables.find((item: AnyRecord) => Number(String(item.label || '').match(/\\d+/)?.[0]) === number);
+        const table = tables.find((item: AnyRecord) => Number(String(item.label || '').match(/\d+/)?.[0]) === number);
         if (!table) return <article className="table-tile table-tile-missing" key={number}><span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small></article>;
         const order = activeOrderFor(table.id);
         const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
@@ -645,7 +645,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
         return <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} key={table.id} onClick={() => setSelectedTable(table)} data-testid={`button-table-${number}`}>
           <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span>
           <strong className="table-tile-number">{number}</strong>
-          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><b className="table-tile-balance">{formatIQD(remaining, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
+          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><div className="table-tile-items">{(order.items || []).slice(0, 3).map((item: AnyRecord, itemIndex: number) => <small key={`${item.productId}-${itemIndex}`}>{localized(item, locale) || item.nameKu || item.nameAr} × {item.quantity}</small>)}{(order.items || []).length > 3 && <small>+{(order.items || []).length - 3}</small>}</div><b className="table-tile-balance">{formatIQD(remaining, locale)}</b><small>{t.tableBalance}</small><small>{t.tableTotal}: {formatIQD(order.totalIqd, locale)}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
           <span className="table-tile-action">{order ? t.tableAddItems : t.newOrder}<Plus size={14} /></span>
         </button>;
       })}

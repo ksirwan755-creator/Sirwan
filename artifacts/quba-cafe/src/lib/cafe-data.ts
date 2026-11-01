@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  getDoc,
   onSnapshot,
   query,
   runTransaction,
@@ -199,7 +200,10 @@ export async function ensureDefaultTables(): Promise<void> {
   const now = new Date().toISOString();
   for (let number = 1; number <= 40; number += 1) {
     if (existingNumbers.has(number)) continue;
-    await addDoc(ownerCollection('tables'), {
+    const tableRef = doc(ownerCollection('tables), `quba-table-${String(number).padStart(2, '0')}`);
+    const existingDoc = await getDoc(tableRef);
+    if (existingDoc.exists()) continue;
+    await setDoc(tableRef, {
       label: String(number),
       seats: 4,
       status: 'available',
@@ -504,6 +508,8 @@ export function useCafeData() {
     updateRecord,
     deleteRecord,
     createOrder,
+    appendOrderItems,
+    ensureDefaultTables,
     updateOrderStatus,
     addPayment,
     cancelOrder,

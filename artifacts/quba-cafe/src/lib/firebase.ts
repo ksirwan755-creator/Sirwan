@@ -3,11 +3,14 @@ import {
   getAuth,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
+  type ConfirmationResult,
   signOut,
   type Auth,
   type User,
 } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, type Firestore } from 'firebase/firestore';
 
 const config: FirebaseOptions = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -55,18 +58,34 @@ export async function signOutOwner(): Promise<void> {
   }
 }
 
-export function listenForOwnerAuth(
-  callback: (user: User | null) => void,
-): () => void {
+let phoneRecaptcha: RecaptchaVerifier | null = null;
+
+export async function startEmployeePhoneLogin(phone: string): Promise<ConfirmationResult> {
+  if (!auth || !db || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
+  const normalized = phone.trim();
+  if (!/^\\+[1-9]\\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
+  if (phoneRecaptcha) {
+    phoneRecaptcha.clear();
+    phoneRecaptcha = null;
+  }
+  phoneRecaptcha = new RecaptchaVerifier(auth, 'employee-recaptcha', { size: 'normal' });
+  await phoneRecaptcha.render();
+  return signInWithPhoneNumber(auth, normalized, phoneRecaptcha);
+}
+
+export async function getActiveEmployeeProfile(user: User): Promise<Record<string, any> | null> {
+  if (!db || !ownerUid || !user.phoneNumber) return null;
+  const snapshot = await getDoc(doc(db, 'owners', ownerUid, 'employees', user.phoneNumber));
+  if (!snapshot.exists()) return null;
+  const profile = snapshot.data();
+  if (profile.active !== true) return null;
+  return { ...profile, phoneE164: user.phoneNumber };
+}
+
+export function listenForAppAuth(callback: (user: User | null) => void): () => void {
   if (!auth || !isFirebaseConfigured) {
     callback(null);
     return () => undefined;
   }
-
-  return onAuthStateChanged(auth, (user) => {
-    callback(user?.uid === ownerUid ? user : null);
-    if (user && user.uid !== ownerUid) {
-      void signOut(auth);
-    }
-  });
+  return onAuthStateChanged(auth, callback);
 }

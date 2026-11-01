@@ -6,6 +6,35 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == ownerUid;
     }
 
+    function employeePath(ownerUid) {
+      return /databases/$(database)/documents/owners/$(ownerUid)/employees/$(request.auth.token.phone_number);
+    }
+
+    function isActiveEmployee(ownerUid) {
+      return request.auth != null
+        && request.auth.token.phone_number is string
+        && exists(employeePath(ownerUid))
+        && get(employeePath(ownerUid)).data.active == true;
+    }
+
+    function employeeCanReadTable(ownerUid, tableId) {
+      return isActiveEmployee(ownerUid)
+        && tableId != null
+        && tableId in get(employeePath(ownerUid)).data.assignedTableIds;
+    }
+
+    match /owners/{ownerUid}/employees/{phoneE164} {
+      allow read: if isOwner(ownerUid)
+        || (request.auth != null && request.auth.token.phone_number == phoneE164);
+      allow create, update, delete: if isOwner(ownerUid);
+    }
+
+    match /owners/{ownerUid}/orders/{recordId} {
+      allow read: if isOwner(ownerUid)
+        || employeeCanReadTable(ownerUid, resource.data.tableId);
+      allow create, update, delete: if isOwner(ownerUid);
+    }
+
     match /owners/{ownerUid}/categories/{recordId} {
       allow read, write: if isOwner(ownerUid);
     }
@@ -15,10 +44,6 @@ service cloud.firestore {
     }
 
     match /owners/{ownerUid}/tables/{recordId} {
-      allow read, write: if isOwner(ownerUid);
-    }
-
-    match /owners/{ownerUid}/orders/{recordId} {
       allow read, write: if isOwner(ownerUid);
     }
 

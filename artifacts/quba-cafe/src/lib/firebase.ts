@@ -57,14 +57,14 @@ export async function signOutOwner(): Promise<void> {
 }
 
 function employeeLoginEmail(phone: string): string {
-  const digits = phone.replace(/\\D/g, '');
+  const digits = phone.replace(/\D/g, '');
   return `employee-${digits}@qubacafe.app`;
 }
 
 export async function signInEmployee(phone: string, password: string): Promise<User> {
   if (!auth || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
   const normalized = phone.trim();
-  if (!/^\\+[1-9]\\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
+  if (!/^\+[1-9]\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
   const result = await signInWithEmailAndPassword(auth, employeeLoginEmail(normalized), password);
   return result.user;
 }

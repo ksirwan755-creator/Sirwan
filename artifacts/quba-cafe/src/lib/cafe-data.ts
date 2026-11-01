@@ -39,6 +39,7 @@ const emptySnapshot: CafeDataSnapshot = {
   orders: [],
   expenses: [],
   customers: [],
+  employees: [],
   settings: null,
 };
 
@@ -49,6 +50,7 @@ const collectionNames: RecordCollection[] = [
   'orders',
   'expenses',
   'customers',
+  'employees',
 ];
 
 type WritableRecord =
@@ -158,6 +160,40 @@ function validateRecord(name: RecordCollection, data: Record<string, unknown>, p
       throw new Error('Order status is invalid.');
     }
   }
+}
+
+export async function createEmployee(input: { name: string; phoneE164: string; assignedTableIds: string[]; assignedTables: { id: string; label: string }[] }): Promise<void> {
+  assertOwner();
+  if (!db) throw new Error('Firebase is not configured.');
+  const phoneE164 = input.phoneE164.trim();
+  if (!/^\\+[1-9]\\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format, for example +9647XXXXXXXXX.');
+  if (!input.name.trim()) throw new Error('Employee name is required.');
+  const ref = doc(db, 'owners', ownerUid, 'employees', phoneE164);
+  const existing = await getDoc(ref);
+  if (existing.exists()) throw new Error('This phone number is already registered.');
+  const now = new Date().toISOString();
+  await setDoc(ref, {
+    name: input.name.trim(),
+    phoneE164,
+    assignedTableIds: [...new Set(input.assignedTableIds)],
+    assignedTables: input.assignedTables,
+    active: true,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
+export async function updateEmployee(phoneE164: string, changes: { name?: string; assignedTableIds?: string[]; assignedTables?: { id: string; label: string }[]; active?: boolean }): Promise<void> {
+  assertOwner();
+  if (!db) throw new Error('Firebase is not configured.');
+  await updateDoc(doc(db, 'owners', ownerUid, 'employees', phoneE164), {
+    ...changes,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function deactivateEmployee(phoneE164: string): Promise<void> {
+  await updateEmployee(phoneE164, { active: false });
 }
 
 export async function upsertCustomer(input: { name?: string; phone?: string; notes?: string }): Promise<string | null> {
@@ -520,6 +556,9 @@ export function useCafeData() {
     cancelOrder,
     updateTableStatus,
     upsertCustomer,
+    createEmployee,
+    updateEmployee,
+    deactivateEmployee,
     saveSettings,
   };
 }

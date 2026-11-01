@@ -15,7 +15,7 @@ import {
   where,
   type DocumentData,
 } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured, ownerUid } from './firebase';
+import { auth, db, isFirebaseConfigured, ownerUid, createEmployeeAuthAccount, createEmployeeProfileRecords } from './firebase';
 import type {
   CafeCategory,
   CafeCustomer,
@@ -162,34 +162,37 @@ function validateRecord(name: RecordCollection, data: Record<string, unknown>, p
   }
 }
 
-export async function createEmployee(input: { name: string; phoneE164: string; assignedTableIds: string[]; assignedTables: { id: string; label: string }[] }): Promise<void> {
+export async function createEmployee(input: { name: string; phoneE164: string; password: string; assignedTableIds: string[]; assignedTables: { id: string; label: string }[] }): Promise<void> {
   assertOwner();
   if (!db) throw new Error('Firebase is not configured.');
   const phoneE164 = input.phoneE164.trim();
-  if (!/^\+[1-9]\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format, for example +9647XXXXXXXXX.');
+  if (!/^\\+[1-9]\\d{7,14}$/.test(phoneE164)) throw new Error('Enter the phone number in international format, for example +9647XXXXXXXXX.');
   if (!input.name.trim()) throw new Error('Employee name is required.');
+  if (input.password.length < 6) throw new Error('Employee password must be at least 6 characters.');
   const ref = doc(db, 'owners', ownerUid, 'employees', phoneE164);
   const existing = await getDoc(ref);
   if (existing.exists()) throw new Error('This phone number is already registered.');
-  const now = new Date().toISOString();
-  await setDoc(ref, {
-    name: input.name.trim(),
+  const uid = await createEmployeeAuthAccount(phoneE164, input.password);
+  await createEmployeeProfileRecords({
+    uid,
     phoneE164,
+    name: input.name.trim(),
     assignedTableIds: [...new Set(input.assignedTableIds)],
     assignedTables: input.assignedTables,
-    active: true,
-    createdAt: now,
-    updatedAt: now,
   });
 }
 
 export async function updateEmployee(phoneE164: string, changes: { name?: string; assignedTableIds?: string[]; assignedTables?: { id: string; label: string }[]; active?: boolean }): Promise<void> {
   assertOwner();
   if (!db) throw new Error('Firebase is not configured.');
-  await updateDoc(doc(db, 'owners', ownerUid, 'employees', phoneE164), {
-    ...changes,
-    updatedAt: new Date().toISOString(),
-  });
+  const employeeRef = doc(db, 'owners', ownerUid, 'employees', phoneE164);
+  const snapshot = await getDoc(employeeRef);
+  if (!snapshot.exists()) throw new Error('Employee record not found.');
+  const uid = String(snapshot.data().authUid || '');
+  if (!uid) throw new Error('Employee login account is missing.');
+  const updatedAt = new Date().toISOString();
+  await updateDoc(employeeRef, { ...changes, updatedAt });
+  await updateDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid), { ...changes, updatedAt });
 }
 
 export async function deactivateEmployee(phoneE164: string): Promise<void> {

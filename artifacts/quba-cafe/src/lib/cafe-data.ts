@@ -130,6 +130,10 @@ export async function deleteRecord(name: RecordCollection, id: string): Promise<
     throw new Error('This record type is protected and cannot be deleted from the app.');
   }
   if (!id.trim()) throw new Error('A record ID is required.');
+  if (name === 'tables') {
+    await updateDoc(doc(ownerCollection(name), id), { active: false, status: 'closed', updatedAt: new Date().toISOString() });
+    return;
+  }
   await deleteDoc(doc(ownerCollection(name), id));
 }
 
@@ -305,50 +309,89 @@ export async function appendOrderItems(orderId: string, items: CreateOrderInput[
 
 export async function createOrder(input: CreateOrderInput): Promise<string> {
   assertOwner();
-  if (input.items.length === 0) {
-    throw new Error('Add at least one item to the order.');
-  }
+  if (!db) throw new Error('Firebase is not configured for this app.');
+  if (input.items.length === 0) throw new Error('Add at least one item to the order.');
 
   const items = input.items.map((item) => {
-    if (!Number.isSafeInteger(item.quantity) || item.quantity < 1) {
-      throw new Error('Item quantity must be a positive whole number.');
-    }
+    if (!Number.isSafeInteger(item.quantity) || item.quantity < 1) throw new Error('Item quantity must be a positive whole number.');
     assertWholeAmount(item.unitPriceIqd, 'Item price', true);
     return { ...item };
   });
-  const totalIqd = items.reduce((total, item) => total + item.quantity * item.unitPriceIqd, 0);
-  assertWholeAmount(totalIqd, 'Order total', true);
-
   const createdAt = new Date().toISOString();
-  const status = normalizeOrderStatus(input.status ?? 'new');
-  const result = await addDoc(ownerCollection('orders'), {
-    tableId: input.tableId || null,
-    customerId: input.customerId || null,
-    items,
-    notes: input.notes?.trim() ?? '',
-    status,
-    totalIqd,
-    payments: [],
-    createdAt,
-    paidAt: null,
-    updatedAt: createdAt,
-  });
+  const requestedStatus = normalizeOrderStatus(input.status ?? 'new');
+  const newOrderRef = doc(ownerCollection('orders'));
+  let savedOrderId = newOrderRef.id;
 
-  if (input.tableId) {
-    const tableRef = doc(ownerCollection('tables'), input.tableId);
-    const tableSnap = await getDocs(query(ownerCollection('tables'), where('__name__', '==', input.tableId)));
-    if (!tableSnap.empty) {
-      const tableData = tableSnap.docs[0].data() as Partial<CafeTable>;
-      const nextStatus = status === 'paid' || status === 'cancelled' ? 'available' : 'occupied';
-      await setDoc(tableRef, {
-        status: normalizeTableStatus(nextStatus),
+  await runTransaction(db, async (transaction) => {
+    let activeOrders: any[] = [];
+    if (input.tableId) {
+      const activeQuery = query(
+        ownerCollection('orders'),
+        where('tableId', '==', input.tableId),
+        where('status', 'in', ['new', 'preparing', 'ready', 'delivered']),
+      );
+      const activeSnapshot = await transaction.get(activeQuery);
+      activeOrders = activeSnapshot.docs.map((item) => ({ id: item.id, ref: item.ref, data: item.data() }));
+    }
+
+    if (activeOrders.length > 0) {
+      activeOrders.sort((a, b) => String(a.data.createdAt || '').localeCompare(String(b.data.createdAt || '')));
+      const primary = activeOrders[0];
+      const combinedItems = [
+        ...activeOrders.flatMap((order) => order.data.items ?? []),
+        ...items,
+      ];
+      const combinedTotal = combinedItems.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPriceIqd || 0), 0);
+      assertWholeAmount(combinedTotal, 'Order total', true);
+      const combinedPayments = activeOrders.flatMap((order) => order.data.payments ?? []);
+      const combinedNotes = [...new Set(activeOrders.map((order) => String(order.data.notes || '').trim()).filter(Boolean).concat(input.notes?.trim() || []))].join(' · ');
+
+      transaction.update(primary.ref, {
+        customerId: input.customerId || primary.data.customerId || null,
+        items: combinedItems,
+        notes: combinedNotes,
+        status: requestedStatus === 'paid' || requestedStatus === 'cancelled' ? 'new' : requestedStatus,
+        totalIqd: combinedTotal,
+        payments: combinedPayments,
+        paidAt: null,
+        updatedAt: createdAt,
+      });
+      for (const duplicate of activeOrders.slice(1)) {
+        transaction.update(duplicate.ref, {
+          status: 'cancelled',
+          mergedInto: primary.id,
+          updatedAt: createdAt,
+        });
+      }
+      savedOrderId = primary.id;
+    } else {
+      const totalIqd = items.reduce((total, item) => total + item.quantity * item.unitPriceIqd, 0);
+      assertWholeAmount(totalIqd, 'Order total', true);
+      transaction.set(newOrderRef, {
+        tableId: input.tableId || null,
+        customerId: input.customerId || null,
+        items,
+        notes: input.notes?.trim() ?? '',
+        status: requestedStatus,
+        totalIqd,
+        payments: [],
+        createdAt,
+        paidAt: null,
+        updatedAt: createdAt,
+      });
+    }
+
+    if (input.tableId) {
+      const tableRef = doc(ownerCollection('tables'), input.tableId);
+      transaction.set(tableRef, {
+        status: 'occupied',
         active: true,
         updatedAt: createdAt,
       }, { merge: true });
     }
-  }
+  });
 
-  return result.id;
+  return savedOrderId;
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {

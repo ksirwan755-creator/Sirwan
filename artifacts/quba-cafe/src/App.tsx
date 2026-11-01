@@ -644,9 +644,17 @@ function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: an
   const todaysExpenses = data.expenses.filter((e: AnyRecord) => String(e.date || '').slice(0, 10) === today);
   const salesToday = data.orders.reduce((sum: number, order: AnyRecord) => sum + (order.payments || []).reduce((paymentSum: number, payment: AnyRecord) => todayKey(asDate(payment.createdAt || order.createdAt)) === today ? paymentSum + Number(payment.amountIqd || 0) : paymentSum, 0), 0);
   const expenseTotal = todaysExpenses.reduce((sum: number, e: AnyRecord) => sum + Number(e.amountIqd || 0), 0);
-  const occupiedTables = data.tables.filter((table: AnyRecord) => ['occupied', 'reserved'].includes(getTableState(table))).length;
-  const availableTables = data.tables.filter((table: AnyRecord) => getTableState(table) === 'available').length;
-  const totalTables = data.tables.filter((x: AnyRecord) => x.active !== false).length;
+  // Derive table occupancy from live orders as well as the saved table status.
+  // This keeps the dashboard accurate if an older order exists while a table status is stale.
+  const activeTableIds = new Set(activeOrders.map((order: AnyRecord) => order.tableId).filter(Boolean));
+  const activeTables = data.tables.filter((table: AnyRecord) => table.active !== false);
+  const occupiedTables = activeTables.filter((table: AnyRecord) =>
+    activeTableIds.has(table.id) || getTableState(table) === 'occupied' || getTableState(table) === 'reserved'
+  ).length;
+  const availableTables = activeTables.filter((table: AnyRecord) =>
+    !activeTableIds.has(table.id) && getTableState(table) === 'available'
+  ).length;
+  const totalTables = activeTables.length;
   const todayLabel = new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const hour = new Date().getHours();
   const popular: Record<string, number> = {};

@@ -634,7 +634,7 @@ function OrderCard({ order, data, locale, t, onPay, onCancel, busy, actions, not
   const paid = (order.payments || []).reduce((s: number, p: AnyRecord) => s + Number(p.amountIqd || 0), 0);
   const status = normalizeOrderStatus(order.status);
   const customer = data.customers.find((c: AnyRecord) => c.id === order.customerId);
-  const nextStatusOptions = ['new', 'preparing', 'ready', 'delivered'];
+  const nextStatusOptions = status === 'paid' || status === 'cancelled' ? [status] : ['new', 'preparing', 'ready', 'delivered'];
   return <article className="order-card" data-testid={`card-order-${order.id}`}>
     <div className="order-card-top"><div className="order-card-meta"><span className={`status-badge ${status === 'paid' ? 'badge-paid' : status === 'cancelled' ? 'badge-cancelled' : 'badge-open'}`}>{orderStatusLabel(status, locale, t)}</span><b>{table?.label || t.table}</b></div><small>{dateText(order.createdAt, locale)}</small></div>
     <div className="order-card-body">

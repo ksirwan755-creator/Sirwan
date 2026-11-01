@@ -45,7 +45,7 @@ const getTableState = (table: AnyRecord | null | undefined): TableStatus => {
 const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
-    dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان',
+    dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
     orders: 'داواکارییەکان', customers: 'کڕیارەکان', employees: 'کارمەندان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
@@ -53,6 +53,7 @@ const copy = {
     recentOrders: 'دوایین داواکارییەکان', viewAll: 'بینینی هەموو', noOrders: 'هێشتا داواکارییەک نییە',
     startOrder: 'داواکارییەکان لێرە دەردەکەون کاتێک تۆمار کران.',
     tableNumber: 'مێزی ژمارە', tableAddItems: 'زیادکردنی خواردن و خواردنەوە', tableCurrentOrder: 'داواکاریی ئێستا', tableNoOrder: 'ئەم مێزە بەتاڵە', tableBalance: 'ماوەی حیساب', tableTotal: 'کۆی داواکاری', tableAutoCreate: 'مێزەکان ئامادە دەکرێن...',
+    backToTables: 'گەڕانەوە بۆ مێزەکان', tableHistory: 'هەموو داواکارییەکانی ئەم مێزە', currentBalance: 'کۆی پارەی ماوە', foodService: 'خواردن', beverageService: 'خواردنەوە', serviceTitle: 'داواکارییەکانی ئامادەکردن', noServiceItems: 'هیچ داواکارییەکی چالاک نییە',
     emptyTitle: 'هێشتا هیچ تۆمارێک نییە', emptyText: 'کاتێک تۆمارێک زیاد بکەیت، لێرە دەردەکەوێت.',
     add: 'زیادکردن', addItem: 'زیادکردنی بەرهەم', search: 'گەڕان', name: 'ناو', nameKu: 'ناو بە کوردی', nameAr: 'ناو بە عەرەبی',
     price: 'نرخ (دینار)', category: 'جۆر', foodCategory: 'خواردن', beverageCategory: 'خواردنەوە', seats: 'ژمارەی کورسی', label: 'ژمارە / ناونیشان',
@@ -89,7 +90,7 @@ const copy = {
   },
   ar: {
     brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
-    dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات',
+    dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
     orders: 'الطلبات', customers: 'الزبائن', employees: 'الموظفون', expenses: 'المصروفات', reports: 'التقارير',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
@@ -97,6 +98,7 @@ const copy = {
     recentOrders: 'أحدث الطلبات', viewAll: 'عرض الكل', noOrders: 'لا توجد طلبات بعد',
     startOrder: 'ستظهر الطلبات هنا عند تسجيلها.',
     tableNumber: 'الطاولة رقم', tableAddItems: 'إضافة طعام ومشروبات', tableCurrentOrder: 'الطلب الحالي', tableNoOrder: 'هذه الطاولة فارغة', tableBalance: 'المبلغ المتبقي', tableTotal: 'إجمالي الطلب', tableAutoCreate: 'جارٍ تجهيز الطاولات...',
+    backToTables: 'العودة إلى الطاولات', tableHistory: 'كل طلبات هذه الطاولة', currentBalance: 'إجمالي المبلغ المتبقي', foodService: 'الطعام', beverageService: 'المشروبات', serviceTitle: 'طلبات التحضير', noServiceItems: 'لا توجد طلبات نشطة',
     emptyTitle: 'لا توجد سجلات بعد', emptyText: 'ستظهر السجلات هنا بعد إضافتها.',
     add: 'إضافة', addItem: 'إضافة عنصر للقائمة', search: 'بحث', name: 'الاسم', nameKu: 'الاسم بالكردية', nameAr: 'الاسم بالعربية',
     price: 'السعر (دينار)', category: 'الفئة', foodCategory: 'طعام', beverageCategory: 'مشروبات', seats: 'عدد المقاعد', label: 'رقم / اسم الطاولة',
@@ -139,6 +141,7 @@ const navItems = [
   { path: '/menu', key: 'products', icon: Coffee },
   { path: '/categories', key: 'categories', icon: Boxes },
   { path: '/tables', key: 'tables', icon: Utensils },
+  { path: '/service', key: 'service', icon: Coffee },
   { path: '/customers', key: 'customers', icon: Users },
   { path: '/employees', key: 'employees', icon: Users },
   { path: '/expenses', key: 'expenses', icon: Wallet },
@@ -551,6 +554,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
+    if (path === '/service') return <ServicePage data={snap} locale={locale} t={t} />;
     if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/employees') return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/expenses') return <DataPage kind="expenses" records={snap.expenses} locale={locale} t={t} actions={dataState} notify={notify} />;
@@ -805,54 +809,88 @@ function Modal({ title, children, onClose }: { title: string; children: ReactNod
 }
 
 function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
-  const [selectedTable, setSelectedTable] = useState<AnyRecord | null>(null);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(true);
   useEffect(() => {
     let active = true;
-    actions.ensureDefaultTables()
-      .catch(() => { if (active) notify(t.serverError); })
-      .finally(() => { if (active) setPreparing(false); });
+    actions.ensureDefaultTables().catch(() => { if (active) notify(t.serverError); }).finally(() => { if (active) setPreparing(false); });
     return () => { active = false; };
   }, []);
   const allTables = [...data.tables];
-  const tables = allTables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => {
-    const na = Number(String(a.label || '').match(/\d+/)?.[0] || 999);
-    const nb = Number(String(b.label || '').match(/\d+/)?.[0] || 999);
-    return na - nb;
-  });
-  const activeOrderFor = (tableId: string) => data.orders.find((order: AnyRecord) => order.tableId === tableId && !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)));
+  const selectedTable = allTables.find((table: AnyRecord) => table.id === selectedTableId) || null;
+  const tables = allTables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => Number(String(a.label || '').match(/\d+/)?.[0] || 999) - Number(String(b.label || '').match(/\d+/)?.[0] || 999));
+  const tableOrders = selectedTable ? data.orders.filter((order: AnyRecord) => order.tableId === selectedTable.id && normalizeOrderStatus(order.status) !== 'cancelled').sort((a: AnyRecord, b: AnyRecord) => asDate(b.createdAt).getTime() - asDate(a.createdAt).getTime()) : [];
+  const activeOrders = tableOrders.filter((order: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)));
+  const currentTotal = activeOrders.reduce((sum: number, order: AnyRecord) => sum + Number(order.totalIqd || 0), 0);
+  const currentPaid = activeOrders.reduce((sum: number, order: AnyRecord) => sum + (order.payments || []).reduce((paid: number, payment: AnyRecord) => paid + Number(payment.amountIqd || 0), 0), 0);
+  const remaining = Math.max(0, currentTotal - currentPaid);
   async function submitItems(payload: AnyRecord) {
     if (!selectedTable) return;
     setBusy(true);
-    try {
-      await actions.createOrder(payload);
-      setSelectedTable(null);
-      notify(t.saved);
-    } catch { notify(t.serverError); }
+    try { await actions.createOrder(payload); setAdding(false); notify(t.saved); }
+    catch (error) { notify(recordActionError(error, t)); }
     finally { setBusy(false); }
   }
+  if (preparing && tables.length === 0) return <div className="tables-loading">{t.tableAutoCreate}</div>;
+  if (selectedTable) return <section className="table-detail-page">
+    <div className="table-detail-head">
+      <button type="button" className="button button-quiet" onClick={() => setSelectedTableId(null)}>‹ {t.backToTables}</button>
+      <div><span className="table-detail-kicker">QUBA · {t.tableNumber}</span><h2>{selectedTable.label}</h2><span className={activeOrders.length ? 'table-detail-state is-busy' : 'table-detail-state'}><i />{activeOrders.length ? t.tableOccupied : t.tableAvailable}</span></div>
+      <button type="button" className="button button-primary" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button>
+    </div>
+    <div className="table-detail-summary">
+      <div><small>{t.tableHistory}</small><b>{tableOrders.length}</b></div><div><small>{t.total}</small><b>{formatIQD(currentTotal, locale)}</b></div>
+      <div><small>{t.paidAmount}</small><b>{formatIQD(currentPaid, locale)}</b></div><div className="table-detail-due"><small>{t.currentBalance}</small><b>{formatIQD(remaining, locale)}</b></div>
+    </div>
+    {tableOrders.length === 0 ? <EmptyState locale={locale} title={t.tableNoOrder} detail={locale === 'ku' ? 'داواکارییەک زیاد بکە بۆ ئەم مێزە.' : 'أضف طلباً لهذه الطاولة.'} /> :
+      <div className="table-order-history">{tableOrders.map((order: AnyRecord) => {
+        const paid = (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0);
+        return <article className="table-history-card" key={order.id}>
+          <div className="table-history-head"><div><b>{t.tableCurrentOrder}</b><small>{dateText(order.createdAt, locale)}</small></div><span className={normalizeOrderStatus(order.status) === 'paid' ? 'status-badge badge-paid' : 'status-badge badge-open'}>{orderStatusLabel(order.status, locale, t)}</span></div>
+          {(order.items || []).map((item: AnyRecord, index: number) => <div className="table-history-line" key={item.productId + '-' + index}><span>{localized(item, locale) || item.nameKu || item.nameAr} <small>× {item.quantity}</small></span><b>{formatIQD(Number(item.unitPriceIqd || 0) * Number(item.quantity || 0), locale)}</b></div>)}
+          <div className="table-history-total"><span>{t.tableTotal}</span><b>{formatIQD(order.totalIqd, locale)}</b></div><small className="table-history-paid">{t.paidAmount}: {formatIQD(paid, locale)}</small>
+        </article>;
+      })}</div>}
+    <div className="table-detail-footer"><div><small>{t.currentBalance}</small><b>{formatIQD(remaining, locale)}</b></div><button className="button button-primary" type="button" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button></div>
+    {adding && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} initialTableId={selectedTable.id} lockTable currentOrder={activeOrders[0] || null} onClose={() => setAdding(false)} onCreate={submitItems} />}
+  </section>;
   return <>
-    <div className="tables-page-intro"><div><b>{locale === 'ku' ? '٤٠ مێز بۆ دانیشتنی کڕیارەکان' : '40 طاولة لاستقبال الزبائن'}</b><small>{locale === 'ku' ? 'مێزێک هەڵبژێرە بۆ زیادکردنی داواکاری و حیسابی کڕیار.' : 'اختر طاولة لإضافة الطلب وحساب الزبون.'}</small></div><span>{tables.length} / 40</span></div>
-    {preparing && tables.length === 0 ? <div className="tables-loading">{t.tableAutoCreate}</div> : <div className="tables-grid">
-      {Array.from({ length: 40 }, (_, index) => {
-        const number = index + 1;
-        const table = allTables.find((item: AnyRecord) => Number(String(item.label || '').match(/\d+/)?.[0]) === number);
-        if (!table) return <article className="table-tile table-tile-missing" key={number}><span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small></article>;
-        if (table.active === false) return <article className="table-tile table-tile-missing" key={table.id}><span className="table-tile-number">{number}</span><small>{t.tableClosed}</small></article>;
-        const order = activeOrderFor(table.id);
-        const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
-        const remaining = order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0;
-        return <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} key={table.id} onClick={() => setSelectedTable(table)} data-testid={`button-table-${number}`}>
-          <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span>
-          <strong className="table-tile-number">{number}</strong>
-          {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><div className="table-tile-items">{(order.items || []).slice(0, 3).map((item: AnyRecord, itemIndex: number) => <small key={`${item.productId}-${itemIndex}`}>{localized(item, locale) || item.nameKu || item.nameAr} × {item.quantity}</small>)}{(order.items || []).length > 3 && <small>+{(order.items || []).length - 3}</small>}</div><b className="table-tile-balance">{formatIQD(remaining, locale)}</b><small>{t.tableBalance}</small><small>{t.tableTotal}: {formatIQD(order.totalIqd, locale)}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
-          <span className="table-tile-action">{order ? t.tableAddItems : t.newOrder}<Plus size={14} /></span>
-        </button>;
-      })}
-    </div>}
-    {selectedTable && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} initialTableId={selectedTable.id} lockTable currentOrder={activeOrderFor(selectedTable.id)} onClose={() => setSelectedTable(null)} onCreate={submitItems} />}
+    <div className="tables-page-intro"><div><b>{locale === 'ku' ? '٤٠ مێز بۆ دانیشتنی کڕیارەکان' : '40 طاولة لاستقبال الزبائن'}</b><small>{locale === 'ku' ? 'ژمارەی مێز هەڵبژێرە؛ هەموو داواکارییەکانی لە شاشەی تایبەتی خۆیدا دەمێننەوە.' : 'اختر رقم الطاولة؛ ستبقى جميع طلباتها محفوظة في صفحتها.'}</small></div><span>{tables.length} / 40</span></div>
+    <div className="tables-grid">{Array.from({ length: 40 }, (_, index) => {
+      const number = index + 1;
+      const table = allTables.find((item: AnyRecord) => Number(String(item.label || '').match(/\d+/)?.[0]) === number);
+      if (!table) return <article className="table-tile table-tile-missing" key={number}><span className="table-tile-number">{number}</span><small>{t.tableAvailable}</small></article>;
+      if (table.active === false) return <article className="table-tile table-tile-missing" key={table.id}><span className="table-tile-number">{number}</span><small>{t.tableClosed}</small></article>;
+      const order = data.orders.find((item: AnyRecord) => item.tableId === table.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(item.status)));
+      const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
+      const due = order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0;
+      return <button type="button" className={`table-tile ${order ? 'table-tile-busy' : ''}`} key={table.id} onClick={() => setSelectedTableId(table.id)} data-testid={`button-table-${number}`}>
+        <span className="table-tile-top"><Utensils size={18} /><small>{order ? t.tableOccupied : t.tableAvailable}</small></span><strong className="table-tile-number">{number}</strong>
+        {order ? <><span className="table-tile-summary">{(order.items || []).length} {t.items}</span><b className="table-tile-balance">{formatIQD(due, locale)}</b><small>{t.tableBalance}</small></> : <span className="table-tile-summary">{t.tableNoOrder}</span>}
+        <span className="table-tile-action">{order ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
+      </button>;
+    })}</div>
   </>;
+}
+function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {
+  const [kind, setKind] = useState<'food' | 'beverage'>('food');
+  const activeOrders = data.orders.filter((order: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)) && order.tableId);
+  const rows = activeOrders.flatMap((order: AnyRecord) => {
+    const table = data.tables.find((entry: AnyRecord) => entry.id === order.tableId);
+    return (order.items || []).filter((item: AnyRecord) => {
+      const product = data.products.find((entry: AnyRecord) => entry.id === item.productId);
+      const categoryId = product?.categoryId || item.categoryId || '';
+      return kind === 'beverage' ? categoryId === '__quba_beverage__' : categoryId !== '__quba_beverage__';
+    }).map((item: AnyRecord, index: number) => ({ ...item, orderId: order.id, tableLabel: table?.label || '—', status: order.status, rowKey: order.id + '-' + item.productId + '-' + index }));
+  });
+  return <div className="service-page">
+    <div className="service-page-intro"><div><span>QUBA · {t.serviceTitle}</span><h2>{t.serviceTitle}</h2><small>{locale === 'ku' ? 'داواکارییە چالاکەکان بە جۆری خواردن جیاکراونەتەوە.' : 'الطلبات النشطة مفصولة حسب نوع الصنف.'}</small></div><b>{rows.length}</b></div>
+    <div className="service-tabs"><button type="button" className={kind === 'food' ? 'active' : ''} onClick={() => setKind('food')}><Utensils size={17} />{t.foodService}</button><button type="button" className={kind === 'beverage' ? 'active' : ''} onClick={() => setKind('beverage')}><Coffee size={17} />{t.beverageService}</button></div>
+    <div className="service-section-heading"><h3>{kind === 'food' ? t.foodService : t.beverageService}</h3><span>{rows.length} {t.items}</span></div>
+    {rows.length === 0 ? <EmptyState locale={locale} title={t.noServiceItems} /> : <div className="service-order-list">{rows.map((item: AnyRecord) => <article className="service-order-row" key={item.rowKey}><div className="service-table-number"><small>{t.table}</small><b>{item.tableLabel}</b></div><div className="service-item-name"><b>{localized(item, locale) || item.nameKu || item.nameAr}</b><small>{orderStatusLabel(item.status, locale, t)}</small></div><strong>× {item.quantity}</strong></article>)}</div>}
+  </div>;
 }
 
 function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
@@ -913,6 +951,7 @@ function NewOrderDialog({ data, locale, t, busy, onClose, onCreate, initialTable
   const [customerId, setCustomerId] = useState('');
   const [notes, setNotes] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [kind, setKind] = useState<'food' | 'beverage'>('food');
   const products = data.products.filter((p: AnyRecord) => p.active !== false);
   const total = products.reduce((sum: number, p: AnyRecord) => sum + Number(p.priceIqd || 0) * (quantities[p.id] || 0), 0);
   const selectedItems = products.filter((p: AnyRecord) => quantities[p.id] > 0).map((p: AnyRecord) => ({ productId: p.id, nameKu: p.nameKu, nameAr: p.nameAr, quantity: quantities[p.id], unitPriceIqd: Number(p.priceIqd || 0) }));
@@ -929,7 +968,8 @@ function NewOrderDialog({ data, locale, t, busy, onClose, onCreate, initialTable
       <small style={{ display: 'block', marginTop: 8 }}>{t.tableTotal}: {formatIQD(currentOrder.totalIqd, locale)}</small>
     </section>}
     <div className="product-picker-head"><b>{currentOrder ? (locale === 'ku' ? 'خواردنی زیاتر زیاد بکە' : 'أضف أصنافاً أخرى') : t.chooseProducts}</b><span>{selectedItems.length} {t.items}</span></div>
-    {products.length === 0 ? <EmptyState locale={locale} title={t.noProducts} /> : <div className="product-picker">{products.map((product: AnyRecord) => <div className="picker-product" key={product.id}><div><b>{localized(product, locale)}</b><small>{formatIQD(product.priceIqd, locale)}</small></div><div className="qty-control"><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: Math.max(0, (prev[product.id] || 0) - 1) }))}>-</button><span>{quantities[product.id] || 0}</span><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }))}>+</button></div></div>)}</div>}
+    <div className="service-tabs picker-service-tabs"><button type="button" className={kind === 'food' ? 'active' : ''} onClick={() => setKind('food')}><Utensils size={15} />{t.foodService}</button><button type="button" className={kind === 'beverage' ? 'active' : ''} onClick={() => setKind('beverage')}><Coffee size={15} />{t.beverageService}</button></div>
+    {products.filter((product: AnyRecord) => kind === 'beverage' ? product.categoryId === '__quba_beverage__' : product.categoryId !== '__quba_beverage__').length === 0 ? <EmptyState locale={locale} title={t.noProducts} /> : <div className="product-picker">{products.filter((product: AnyRecord) => kind === 'beverage' ? product.categoryId === '__quba_beverage__' : product.categoryId !== '__quba_beverage__').map((product: AnyRecord) => <div className="picker-product" key={product.id}><div><b>{localized(product, locale)}</b><small>{formatIQD(product.priceIqd, locale)}</small></div><div className="qty-control"><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: Math.max(0, (prev[product.id] || 0) - 1) }))}>-</button><span>{quantities[product.id] || 0}</span><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }))}>+</button></div></div>)}</div>}
     <label className="form-field"><span>{t.noteOrder}</span><textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
     <div className="order-total"><span>{t.total}</span><b>{formatIQD(total, locale)}</b></div>
     <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy || !tableId || !selectedItems.length} type="submit">{t.createOrder}</button></div>

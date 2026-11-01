@@ -844,6 +844,9 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const currentTotal = activeOrders.reduce((sum: number, order: AnyRecord) => sum + Number(order.totalIqd || 0), 0);
   const currentPaid = activeOrders.reduce((sum: number, order: AnyRecord) => sum + (order.payments || []).reduce((paid: number, payment: AnyRecord) => paid + Number(payment.amountIqd || 0), 0), 0);
   const remaining = Math.max(0, currentTotal - currentPaid);
+  const historyTotal = tableOrders.reduce((sum: number, order: AnyRecord) => sum + Number(order.totalIqd || 0), 0);
+  const historyPaid = tableOrders.reduce((sum: number, order: AnyRecord) => sum + (order.payments || []).reduce((paid: number, payment: AnyRecord) => paid + Number(payment.amountIqd || 0), 0), 0);
+  const historyRemaining = Math.max(0, historyTotal - historyPaid);
   async function submitItems(payload: AnyRecord) {
     if (!selectedTable) return;
     setBusy(true);
@@ -859,9 +862,12 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
       <button type="button" className="button button-primary" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button>
     </div>
     <div className="table-detail-summary">
-      <div><small>{t.tableHistory}</small><b>{tableOrders.length}</b></div><div><small>{t.total}</small><b>{formatIQD(currentTotal, locale)}</b></div>
-      <div><small>{t.paidAmount}</small><b>{formatIQD(currentPaid, locale)}</b></div><div className="table-detail-due"><small>{t.currentBalance}</small><b>{formatIQD(remaining, locale)}</b></div>
+      <div><small>{locale === 'ku' ? 'کۆی داواکارییەکان' : 'عدد الطلبات'}</small><b>{tableOrders.length}</b></div>
+      <div><small>{locale === 'ku' ? 'کۆی گشتی هەموو داواکارییەکان' : 'إجمالي كل الطلبات'}</small><b>{formatIQD(historyTotal, locale)}</b></div>
+      <div><small>{t.paidAmount}</small><b>{formatIQD(historyPaid, locale)}</b></div>
+      <div className="table-detail-due"><small>{locale === 'ku' ? 'ماوەی هەموو حیسابەکان' : 'المتبقي على كل الطلبات'}</small><b>{formatIQD(historyRemaining, locale)}</b></div>
     </div>
+    {activeOrders.length > 0 && <div className="table-detail-footer"><div><small>{locale === 'ku' ? 'حیسابی داواکارییە چالاکەکان' : 'رصيد الطلبات النشطة'}</small><b>{formatIQD(remaining, locale)}</b></div></div> 
     {tableOrders.length === 0 ? <EmptyState locale={locale} title={t.tableNoOrder} detail={locale === 'ku' ? 'داواکارییەک زیاد بکە بۆ ئەم مێزە.' : 'أضف طلباً لهذه الطاولة.'} /> :
       <div className="table-order-history">{tableOrders.map((order: AnyRecord) => {
         const paid = (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0);
@@ -900,7 +906,8 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
 }
 function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {
   const [kind, setKind] = useState<'food' | 'beverage'>('food');
-  const activeOrders = data.orders.filter((order: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)) && order.tableId);
+  const [selectedTableId, setSelectedTableId] = useState('all');
+  const activeOrders = data.orders.filter((order: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)) && order.tableId && (selectedTableId === 'all' || order.tableId === selectedTableId));
   const rows = activeOrders.flatMap((order: AnyRecord) => {
     const table = data.tables.find((entry: AnyRecord) => entry.id === order.tableId);
     return (order.items || []).filter((item: AnyRecord) => {
@@ -911,6 +918,7 @@ function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: 
   });
   return <div className="service-page">
     <div className="service-page-intro"><div><span>QUBA · {t.serviceTitle}</span><h2>{t.serviceTitle}</h2><small>{locale === 'ku' ? 'داواکارییە چالاکەکان بە جۆری خواردن جیاکراونەتەوە.' : 'الطلبات النشطة مفصولة حسب نوع الصنف.'}</small></div><b>{rows.length}</b></div>
+    <label className="form-field service-table-filter"><span>{locale === 'ku' ? 'هەڵبژاردنی مێز' : 'اختر الطاولة'}</span><select value={selectedTableId} onChange={(e) => setSelectedTableId(e.target.value)}><option value="all">{locale === 'ku' ? 'هەموو مێزەکان' : 'كل الطاولات'}</option>{data.tables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord,b: AnyRecord) => String(a.label).localeCompare(String(b.label), undefined, { numeric: true })).map((table: AnyRecord) => <option key={table.id} value={table.id}>{locale === 'ku' ? 'مێزی' : 'طاولة'} {table.label}</option>)}</select></label>
     <div className="service-tabs"><button type="button" className={kind === 'food' ? 'active' : ''} onClick={() => setKind('food')}><Utensils size={17} />{t.foodService}</button><button type="button" className={kind === 'beverage' ? 'active' : ''} onClick={() => setKind('beverage')}><Coffee size={17} />{t.beverageService}</button></div>
     <div className="service-section-heading"><h3>{kind === 'food' ? t.foodService : t.beverageService}</h3><span>{rows.length} {t.items}</span></div>
     {rows.length === 0 ? <EmptyState locale={locale} title={t.noServiceItems} /> : <div className="service-order-list">{rows.map((item: AnyRecord) => <article className="service-order-row" key={item.rowKey}><div className="service-table-number"><small>{t.table}</small><b>{item.tableLabel}</b></div><div className="service-item-name"><b>{localized(item, locale) || item.nameKu || item.nameAr}</b><small>{orderStatusLabel(item.status, locale, t)}</small></div><strong>× {item.quantity}</strong></article>)}</div>}
@@ -978,7 +986,7 @@ function NewOrderDialog({ data, locale, t, busy, onClose, onCreate, initialTable
   const [kind, setKind] = useState<'food' | 'beverage'>('food');
   const products = data.products.filter((p: AnyRecord) => p.active !== false);
   const total = products.reduce((sum: number, p: AnyRecord) => sum + Number(p.priceIqd || 0) * (quantities[p.id] || 0), 0);
-  const selectedItems = products.filter((p: AnyRecord) => quantities[p.id] > 0).map((p: AnyRecord) => ({ productId: p.id, nameKu: p.nameKu, nameAr: p.nameAr, quantity: quantities[p.id], unitPriceIqd: Number(p.priceIqd || 0) }));
+  const selectedItems = products.filter((p: AnyRecord) => quantities[p.id] > 0).map((p: AnyRecord) => ({ productId: p.id, nameKu: p.nameKu, nameAr: p.nameAr, categoryId: p.categoryId || '', quantity: quantities[p.id], unitPriceIqd: Number(p.priceIqd || 0) }));
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!tableId || !selectedItems.length) return;

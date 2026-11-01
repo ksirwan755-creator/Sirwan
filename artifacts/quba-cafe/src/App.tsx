@@ -717,10 +717,11 @@ const fieldText = (key: string, t: any) => {
 };
 function recordActionError(error: unknown, t: any) {
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
-  const message = error instanceof Error ? error.message.toLowerCase() : '';
-  return code === 'permission-denied' || message.includes('insufficient permissions')
+  const message = error instanceof Error ? error.message : '';
+  console.error('QUBA record action failed:', error);
+  return code === 'permission-denied' || message.toLowerCase().includes('insufficient permissions')
     ? t.firestoreDenied
-    : t.serverError;
+    : (message || t.serverError);
 }
 const schemas: Record<RecordKind, string[]> = {
   categories: ['nameKu', 'nameAr', 'sortOrder'],

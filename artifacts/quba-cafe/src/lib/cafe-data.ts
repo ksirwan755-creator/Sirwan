@@ -322,16 +322,23 @@ export async function createOrder(input: CreateOrderInput): Promise<string> {
   const newOrderRef = doc(ownerCollection('orders'));
   let savedOrderId = newOrderRef.id;
 
-  await runTransaction(db, async (transaction) => {
-    let activeOrders: any[] = [];
-    if (input.tableId) {
-      const activeQuery = query(
+  const candidateOrderRefs = input.tableId
+    ? (await getDocs(query(
         ownerCollection('orders'),
         where('tableId', '==', input.tableId),
         where('status', 'in', ['new', 'preparing', 'ready', 'delivered']),
-      );
-      const activeSnapshot = await transaction.get(activeQuery);
-      activeOrders = activeSnapshot.docs.map((item) => ({ id: item.id, ref: item.ref, data: item.data() }));
+      ))).docs.map((item) => item.ref)
+    : [];
+
+  await runTransaction(db, async (transaction) => {
+    const activeOrders: any[] = [];
+    for (const candidateRef of candidateOrderRefs) {
+      const candidateSnapshot = await transaction.get(candidateRef);
+      if (!candidateSnapshot.exists()) continue;
+      const candidateData = candidateSnapshot.data();
+      if (candidateData.tableId === input.tableId && ['new', 'preparing', 'ready', 'delivered'].includes(candidateData.status)) {
+        activeOrders.push({ id: candidateSnapshot.id, ref: candidateRef, data: candidateData });
+      }
     }
 
     if (activeOrders.length > 0) {

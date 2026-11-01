@@ -511,6 +511,12 @@ export function useCafeData() {
           },
           (snapshotError) => {
             if (!active) return;
+            if (name === 'employees') {
+              Object.assign(next, { employees: [] });
+              setData({ ...next });
+              markLoaded(name);
+              return;
+            }
             setError(snapshotError.message);
             setLoading(false);
           },

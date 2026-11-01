@@ -131,7 +131,17 @@ export async function deleteRecord(name: RecordCollection, id: string): Promise<
   }
   if (!id.trim()) throw new Error('A record ID is required.');
   if (name === 'tables') {
-    await updateDoc(doc(ownerCollection(name), id), { active: false, status: 'closed', updatedAt: new Date().toISOString() });
+    if (!db) throw new Error('Firebase is not configured for this app.');
+    const tableRef = doc(ownerCollection(name), id);
+    await runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(tableRef);
+      if (!snapshot.exists()) return;
+      transaction.set(tableRef, {
+        active: false,
+        status: 'closed',
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    });
     return;
   }
   await deleteDoc(doc(ownerCollection(name), id));

@@ -19,13 +19,21 @@
   <body>
     <div id="root"><div id="quba-boot" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6f2e9;color:#173f32;font-family:Arial,sans-serif;text-align:center;padding:24px;direction:rtl"><div><div style="font-size:34px;font-weight:800;letter-spacing:2px">QUBA</div><p style="font-size:17px">تکایە چاوەڕێ بکە... قوبە ئامادە دەبێت</p></div></div></div>
     <script>
-      window.addEventListener('error', function () {
+      function showQubaError(message) {
         var boot = document.getElementById('quba-boot');
-        if (boot) boot.innerHTML = '<div style="max-width:360px"><strong style="font-size:28px">QUBA</strong><p>نەتوانرا بەرنامەکە باربکرێت. تکایە پەڕەکە نوێ بکەرەوە.</p></div>';
+        if (!boot) return;
+        var details = document.createElement('pre');
+        details.style.cssText = 'margin-top:14px;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;direction:ltr;font:12px monospace;color:#7f1d1d;max-width:340px';
+        details.textContent = String(message || 'Unknown startup error').slice(0, 700);
+        boot.innerHTML = '<div style="max-width:360px"><strong style="font-size:28px">QUBA</strong><p>هەڵەیەک لە بارکردنی بەرنامەکە ڕوویدا.</p></div>';
+        boot.firstChild.appendChild(details);
+      }
+      window.addEventListener('error', function (event) {
+        showQubaError([event.message, event.filename, event.lineno && ('line ' + event.lineno)].filter(Boolean).join(' | '));
       });
-      window.addEventListener('unhandledrejection', function () {
-        var boot = document.getElementById('quba-boot');
-        if (boot) boot.innerHTML = '<div style="max-width:360px"><strong style="font-size:28px">QUBA</strong><p>هەڵەیەک لە بارکردنی بەرنامەکە ڕوویدا. تکایە پەڕەکە نوێ بکەرەوە.</p></div>';
+      window.addEventListener('unhandledrejection', function (event) {
+        var reason = event.reason;
+        showQubaError(reason && (reason.stack || reason.message) || reason);
       });
     </script>
     <script type="module" src="/src/main.tsx"></script>

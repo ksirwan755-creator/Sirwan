@@ -191,7 +191,7 @@ export async function ensureDefaultTables(): Promise<void> {
   const existingNumbers = new Set<number>();
   snapshot.docs.forEach((item) => {
     const label = String(item.data().label ?? '');
-    const match = label.match(/\\d+/);
+    const match = label.match(/\d+/);
     if (match) {
       const number = Number(match[0]);
       if (number >= 1 && number <= 40) existingNumbers.add(number);

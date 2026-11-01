@@ -6,7 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCafeData } from '@/lib/cafe-data';
 import { getActiveEmployeeProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signOutOwner, startEmployeePhoneLogin, db } from '@/lib/firebase';
 import type { User, ConfirmationResult } from 'firebase/auth';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
   ChevronDown, CircleAlert, ClipboardList, Coffee, CreditCard, FileBarChart2,
@@ -421,6 +421,114 @@ function Brand({ locale }: { locale: Locale }) {
   return <div className="brand"><span className="brand-symbol"><span /><span /><span /></span><span className="brand-type"><b>QUBA</b><small>{copy[locale].subbrand}</small></span></div>;
 }
 
+
+function EmployeeOrdersScreen({ profile, locale, onLocale, onSignOut }: { profile: AnyRecord; locale: Locale; onLocale: (locale: Locale) => void; onSignOut: () => Promise<void> }) {
+  const [orders, setOrders] = useState<AnyRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [signingOut, setSigningOut] = useState(false);
+  const assignedIds: string[] = Array.isArray(profile.assignedTableIds) ? profile.assignedTableIds : [];
+  const tableLabels = new Map((profile.assignedTables || []).map((table: AnyRecord) => [table.id, table.label]));
+  const t = copy[locale];
+
+  useEffect(() => {
+    if (!db || !ownerUid || !profile.phoneE164) { setLoading(false); return; }
+    const employeeRef = doc(db, 'owners', ownerUid, 'employees', profile.phoneE164);
+    const stopEmployee = onSnapshot(employeeRef, (snapshot) => {
+      if (!snapshot.exists() || snapshot.data().active !== true) void signOutOwner();
+    }, () => { void signOutOwner(); });
+    if (assignedIds.length === 0) {
+      setOrders([]);
+      setLoading(false);
+      return () => stopEmployee();
+    }
+    const groups = new Map<number, AnyRecord[]>();
+    const stops: (() => void)[] = [];
+    const chunks: string[][] = [];
+    for (let i = 0; i < assignedIds.length; i += 30) chunks.push(assignedIds.slice(i, i + 30));
+    chunks.forEach((chunk, index) => {
+      const ordersQuery = query(collection(db, 'owners', ownerUid, 'orders'), where('tableId', 'in', chunk));
+      const stop = onSnapshot(ordersQuery, (snapshot) => {
+        groups.set(index, snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+        setOrders([...groups.values()].flat().filter((order) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status))).sort((a, b) => asDate(b.createdAt).getTime() - asDate(a.createdAt).getTime()));
+        setLoading(false);
+        setError('');
+      }, (snapshotError) => { setError(snapshotError.message); setLoading(false); });
+      stops.push(stop);
+    });
+    return () => { stopEmployee(); stops.forEach((stop) => stop()); };
+  }, [profile.phoneE164, assignedIds.join('|')]);
+
+  async function leave() { if (signingOut) return; setSigningOut(true); try { await onSignOut(); } finally { setSigningOut(false); } }
+  return <main className="gate-shell employee-orders-shell" dir="rtl">
+    <div className="gate-top"><Brand locale={locale} /><div className="employee-top-actions"><LocaleSwitch locale={locale} onLocale={onLocale} /><button className="signout-button employee-logout" type="button" onClick={() => void leave()} disabled={signingOut}>{signingOut ? <LoaderCircle className="spin" size={15} /> : <LogOut size={15} />}{t.signOut}</button></div></div>
+    <section className="employee-orders-wrap">
+      <div className="employee-welcome"><span className="gate-icon"><ClipboardList size={22} /></span><p className="eyebrow">QUBA · {locale === 'ku' ? 'شاشەی کارمەند' : 'واجهة الموظف'}</p><h1>{profile.name || (locale === 'ku' ? 'کارمەند' : 'موظف')}</h1><p>{locale === 'ku' ? 'تەنها داواکاریی مێزە دیاریکراوەکانت دەبینیت.' : 'تظهر هنا طلبات الطاولات المخصصة لك فقط.'}</p></div>
+      {loading ? <LoadingContent locale={locale} /> : error ? <ErrorContent locale={locale} message={error} onRetry={() => window.location.reload()} /> : orders.length === 0 ? <EmptyState locale={locale} title={locale === 'ku' ? 'داواکاریی چالاک نییە' : 'لا توجد طلبات نشطة'} /> : <div className="employee-order-list">
+        {orders.map((order) => <article className="panel employee-order-card" key={order.id}>
+          <div className="employee-order-head"><b>{locale === 'ku' ? 'مێزی' : 'الطاولة'} {String(tableLabels.get(order.tableId) || '—')}</b><span className="status-badge badge-open">{orderStatusLabel(order.status, locale, t)}</span></div>
+          <small>{dateText(order.createdAt, locale)}</small>
+          <div className="employee-order-items">{(order.items || []).map((item: AnyRecord, index: number) => <div key={index}><span>{localized(item, locale) || item.nameKu || item.nameAr}</span><b>× {item.quantity}</b></div>)}</div>
+          {order.notes && <p className="order-note">{order.notes}</p>}
+        </article>)}
+      </div>}
+    </section>
+  </main>;
+}
+
+function EmployeesPage({ employees, tables, locale, t, actions, notify }: { employees: AnyRecord[]; tables: AnyRecord[]; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<AnyRecord | null>(null);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [assigned, setAssigned] = useState<string[]>([]);
+  const [active, setActive] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const isKu = locale === 'ku';
+  const availableTables = tables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord,b: AnyRecord) => String(a.label).localeCompare(String(b.label), undefined, { numeric: true }));
+  function open(employee?: AnyRecord) {
+    setEditing(employee || null);
+    setName(employee?.name || '');
+    setPhone(employee?.phoneE164 || '');
+    setAssigned(employee?.assignedTableIds || []);
+    setActive(employee?.active !== false);
+    setDialogOpen(true);
+  }
+  async function save(event: FormEvent) {
+    event.preventDefault(); setBusy(true);
+    try {
+      const assignedTables = availableTables.filter((table: AnyRecord) => assigned.includes(table.id)).map((table: AnyRecord) => ({ id: table.id, label: table.label }));
+      if (editing) await actions.updateEmployee(editing.phoneE164, { name: name.trim(), assignedTableIds: assigned, assignedTables, active });
+      else await actions.createEmployee({ name: name.trim(), phoneE164: phone.trim(), assignedTableIds: assigned, assignedTables });
+      setDialogOpen(false); notify(t.saved);
+    } catch (error) { notify(error instanceof Error ? error.message : t.serverError); }
+    finally { setBusy(false); }
+  }
+  async function toggle(employee: AnyRecord) {
+    try { await actions.updateEmployee(employee.phoneE164, { active: employee.active === false }); notify(t.saved); }
+    catch { notify(t.serverError); }
+  }
+  return <>
+    <div className="list-toolbar"><div className="employee-page-hint">{isKu ? 'ژمارەی مۆبایل و مێزەکانی کارمەند دیاری بکە.' : 'حدد رقم الهاتف والطاولات المخصصة للموظف.'}</div><button className="button button-primary" type="button" onClick={() => open()}><Plus size={16} />{t.add}</button></div>
+    {employees.length === 0 ? <EmptyState locale={locale} title={isKu ? 'هێشتا کارمەند تۆمار نەکراوە' : 'لم يتم تسجيل موظفين بعد'} /> : <div className="employee-admin-list">{employees.map((employee) => <article className="panel employee-admin-card" key={employee.phoneE164}>
+      <div><b>{employee.name}</b><small dir="ltr">{employee.phoneE164}</small><small>{isKu ? 'مێزەکان: ' : 'الطاولات: '}{(employee.assignedTables || []).map((x: AnyRecord) => x.label).join('، ') || (isKu ? 'هیچ مێزێک دیاری نەکراوە' : 'لم تُحدد طاولات')}</small></div>
+      <span className={`status-badge ${employee.active === false ? 'badge-cancelled' : 'badge-paid'}`}>{employee.active === false ? t.inactive : t.active}</span>
+      <div className="row-actions"><button className="button button-quiet small-button" type="button" onClick={() => open(employee)}>{t.edit}</button><button className="button button-secondary small-button" type="button" onClick={() => void toggle(employee)}>{employee.active === false ? (isKu ? 'چالاککردن' : 'تفعيل') : (isKu ? 'ناچالاککردن' : 'إيقاف')}</button></div>
+    </article>)}</div>}
+    {dialogOpen && <Modal title={editing ? t.edit : (isKu ? 'زیادکردنی کارمەند' : 'إضافة موظف')} onClose={() => setDialogOpen(false)}>
+      <form className="dialog-form" onSubmit={save}>
+        <label className="form-field"><span>{t.name}</span><input required value={name} onChange={(e) => setName(e.target.value)} /></label>
+        <label className="form-field"><span>{t.phone} (+964...)</span><input required disabled={!!editing} type="tel" inputMode="tel" placeholder="+9647XXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" /></label>
+        <div className="employee-table-picker"><b>{isKu ? 'ئەو مێزانەی کارمەند دەیبینێت' : 'الطاولات التي يمكن للموظف رؤيتها'}</b>
+          {availableTables.map((table: AnyRecord) => <label key={table.id}><input type="checkbox" checked={assigned.includes(table.id)} onChange={(e) => setAssigned((prev) => e.target.checked ? [...prev, table.id] : prev.filter((id) => id !== table.id))} /><span>{isKu ? 'مێزی' : 'طاولة'} {table.label}</span></label>)}
+        </div>
+        {editing && <label className="check-line"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />{t.active}</label>}
+        <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={() => setDialogOpen(false)}>{t.cancel}</button><button className="button button-primary" disabled={busy || !name.trim() || !phone.trim()} type="submit">{busy && <LoaderCircle className="spin" size={15} />}{t.save}</button></div>
+      </form>
+    </Modal>}
+  </>;
+}
+
 function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => Promise<void>; t: any }) {
   const dataState = useCafeData();
   const { data, loading, error } = dataState;
@@ -457,6 +565,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
+    if (path === '/employees') return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/expenses') return <DataPage kind="expenses" records={snap.expenses} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/reports') return <Reports data={snap} locale={locale} t={t} />;
     if (path === '/settings') return <SettingsPage settings={snap.settings} locale={locale} onLocale={setLocale} actions={dataState} notify={notify} t={t} />;

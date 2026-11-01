@@ -4,8 +4,8 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCafeData } from '@/lib/cafe-data';
-import { getActiveEmployeeProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signOutOwner, startEmployeePhoneLogin, db } from '@/lib/firebase';
-import type { User, ConfirmationResult } from 'firebase/auth';
+import { getActiveEmployeeProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signInEmployee, signOutOwner, db } from '@/lib/firebase';
+import type { User } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
@@ -261,7 +261,7 @@ function App() {
         setAuthError(t.notOwner);
       }
     } catch { setAuthError(t.loginError); }
-  }} />;
+  }} onEmployeeSignIn={async (phone, employeePassword) => { setAuthError(''); await signInEmployee(phone, employeePassword); }} />;
   if (employeeProfile) return <EmployeeOrdersScreen profile={employeeProfile} locale={locale} onLocale={setLocale} onSignOut={handleSignOut} />;
   return (
     <QueryClientProvider client={queryClient}>
@@ -341,14 +341,12 @@ function SetupNotice({ locale, onLocale }: { locale: Locale; onLocale: (locale: 
   </main>;
 }
 
-function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale; onLocale: (locale: Locale) => void; authError: string; onSignIn: (email: string, password: string) => Promise<void> }) {
+function LoginScreen({ locale, onLocale, authError, onSignIn, onEmployeeSignIn }: { locale: Locale; onLocale: (locale: Locale) => void; authError: string; onSignIn: (email: string, password: string) => Promise<void>; onEmployeeSignIn: (phone: string, password: string) => Promise<void> }) {
   const t = copy[locale];
   const [mode, setMode] = useState<'owner' | 'employee'>('owner');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [smsCode, setSmsCode] = useState('');
-  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
   const [localError, setLocalError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -357,21 +355,13 @@ function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale
     await onSignIn(email.trim(), password);
     setBusy(false);
   }
-  async function sendCode() {
-    setBusy(true); setLocalError('');
+  async function submitEmployee(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setLocalError('');
     try {
-      const result = await startEmployeePhoneLogin(phone);
-      setConfirmation(result);
-    } catch (error) {
-      setLocalError(error instanceof Error ? error.message : t.loginError);
+      await onEmployeeSignIn(phone.trim(), password);
+    } catch {
+      setLocalError(locale === 'ku' ? 'ژمارەی مۆبایل یان وشەی نهێنی هەڵەیە، یان هەژمارەکە ناچالاکە.' : 'رقم الهاتف أو كلمة المرور غير صحيحة، أو أن الحساب غير نشط.');
     } finally { setBusy(false); }
-  }
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault(); if (!confirmation) return;
-    setBusy(true); setLocalError('');
-    try { await confirmation.confirm(smsCode.trim()); }
-    catch { setLocalError(locale === 'ku' ? 'کۆدەکە هەڵەیە یان بەسەرچووە؛ دووبارە هەوڵ بدەرەوە.' : 'الرمز غير صحيح أو منتهي الصلاحية؛ حاول مجدداً.'); }
-    finally { setBusy(false); }
   }
   return <main className="gate-shell" dir="rtl">
     <div className="gate-top"><Brand locale={locale} /><LocaleSwitch locale={locale} onLocale={onLocale} /></div>
@@ -388,7 +378,7 @@ function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale
         <h2>{t.loginTitle}</h2><p className="gate-copy">{t.loginText}</p>
         <div className="login-mode-tabs">
           <button type="button" className={mode === 'owner' ? 'active' : ''} onClick={() => { setMode('owner'); setLocalError(''); }}>{locale === 'ku' ? 'خاوەن' : 'المالك'}</button>
-          <button type="button" className={mode === 'employee' ? 'active' : ''} onClick={() => { setMode('employee'); setLocalError(''); setConfirmation(null); }}>{locale === 'ku' ? 'کارمەند' : 'موظف'}</button>
+          <button type="button" className={mode === 'employee' ? 'active' : ''} onClick={() => { setMode('employee'); setLocalError(''); }}>{locale === 'ku' ? 'کارمەند' : 'موظف'}</button>
         </div>
         {mode === 'owner' ? <form onSubmit={submitOwner}>
           <label className="field-label" htmlFor="owner-email">{t.email}</label>
@@ -397,22 +387,15 @@ function LoginScreen({ locale, onLocale, authError, onSignIn }: { locale: Locale
           <input id="owner-password" data-testid="input-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
           {authError && <div className="inline-error" role="alert" data-testid="status-auth-error">{authError}</div>}
           <button className="button button-primary login-submit" type="submit" disabled={busy} data-testid="button-login">{busy && <LoaderCircle className="spin" size={16} />}{t.login}<ArrowUpRight size={16} /></button>
-        </form> : <div>
-          {!confirmation ? <>
-            <p className="employee-login-hint">{locale === 'ku' ? 'ژمارەی مۆبایلەکەت بە کۆدی وڵات بنووسە؛ نموونە: +9647XXXXXXXXX' : 'أدخل رقم هاتفك مع رمز الدولة، مثال: +9647XXXXXXXXX'}</p>
-            <label className="field-label" htmlFor="employee-phone">{t.phone}</label>
-            <input id="employee-phone" data-testid="input-employee-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+9647XXXXXXXXX" required value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
-            <div id="employee-recaptcha" className="employee-recaptcha" />
-            <button className="button button-primary login-submit" type="button" disabled={busy || !phone.trim()} onClick={() => void sendCode()}>{busy && <LoaderCircle className="spin" size={16} />}{locale === 'ku' ? 'ناردنی کۆدی SMS' : 'إرسال رمز SMS'}<ArrowUpRight size={16} /></button>
-          </> : <form onSubmit={verifyCode}>
-            <p className="employee-login-hint">{locale === 'ku' ? 'کۆدی نێردراو بۆ مۆبایلەکەت بنووسە.' : 'أدخل الرمز الذي أُرسل إلى هاتفك.'}</p>
-            <label className="field-label" htmlFor="employee-code">{locale === 'ku' ? 'کۆدی پشتڕاستکردنەوە' : 'رمز التحقق'}</label>
-            <input id="employee-code" data-testid="input-employee-code" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required value={smsCode} onChange={(e) => setSmsCode(e.target.value)} dir="ltr" />
-            <button className="button button-primary login-submit" type="submit" disabled={busy || smsCode.trim().length < 6}>{busy && <LoaderCircle className="spin" size={16} />}{locale === 'ku' ? 'پشتڕاستکردنەوە و چوونەژوورەوە' : 'تأكيد وتسجيل الدخول'}<ArrowUpRight size={16} /></button>
-            <button className="button button-quiet login-submit" type="button" disabled={busy} onClick={() => { setConfirmation(null); setSmsCode(''); }}>{locale === 'ku' ? 'گۆڕینی ژمارە' : 'تغيير الرقم'}</button>
-          </form>}
+        </form> : <form onSubmit={submitEmployee}>
+          <p className="employee-login-hint">{locale === 'ku' ? 'ژمارەی مۆبایل و وشەی نهێنییەکەی خاوەن بنووسە.' : 'أدخل رقم الهاتف وكلمة المرور التي أعطاها لك المالك.'}</p>
+          <label className="field-label" htmlFor="employee-phone">{t.phone}</label>
+          <input id="employee-phone" data-testid="input-employee-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+9647XXXXXXXXX" required value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+          <label className="field-label" htmlFor="employee-password">{t.password}</label>
+          <input id="employee-password" data-testid="input-employee-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
           {(localError || authError) && <div className="inline-error" role="alert" data-testid="status-auth-error">{localError || authError}</div>}
-        </div>}
+          <button className="button button-primary login-submit" type="submit" disabled={busy || !phone.trim() || !password}>{busy && <LoaderCircle className="spin" size={16} />}{locale === 'ku' ? 'چوونەژوورەوە' : 'تسجيل الدخول'}<ArrowUpRight size={16} /></button>
+        </form>}
       </section>
     </div>
   </main>;
@@ -482,6 +465,7 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
   const [editing, setEditing] = useState<AnyRecord | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [employeePassword, setEmployeePassword] = useState('');
   const [assigned, setAssigned] = useState<string[]>([]);
   const [active, setActive] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -491,6 +475,7 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
     setEditing(employee || null);
     setName(employee?.name || '');
     setPhone(employee?.phoneE164 || '');
+    setEmployeePassword('');
     setAssigned(employee?.assignedTableIds || []);
     setActive(employee?.active !== false);
     setDialogOpen(true);
@@ -500,7 +485,7 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
     try {
       const assignedTables = availableTables.filter((table: AnyRecord) => assigned.includes(table.id)).map((table: AnyRecord) => ({ id: table.id, label: table.label }));
       if (editing) await actions.updateEmployee(editing.phoneE164, { name: name.trim(), assignedTableIds: assigned, assignedTables, active });
-      else await actions.createEmployee({ name: name.trim(), phoneE164: phone.trim(), assignedTableIds: assigned, assignedTables });
+      else await actions.createEmployee({ name: name.trim(), phoneE164: phone.trim(), password: employeePassword, assignedTableIds: assigned, assignedTables });
       setDialogOpen(false); notify(t.saved);
     } catch (error) { notify(error instanceof Error ? error.message : t.serverError); }
     finally { setBusy(false); }
@@ -520,11 +505,12 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
       <form className="dialog-form" onSubmit={save}>
         <label className="form-field"><span>{t.name}</span><input required value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label className="form-field"><span>{t.phone} (+964...)</span><input required disabled={!!editing} type="tel" inputMode="tel" placeholder="+9647XXXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" /></label>
+        {!editing && <label className="form-field"><span>{isKu ? 'وشەی نهێنیی کارمەند (لانیکەم ٦ پیت)' : 'كلمة مرور الموظف (6 أحرف على الأقل)'}</span><input required minLength={6} type="password" autoComplete="new-password" value={employeePassword} onChange={(e) => setEmployeePassword(e.target.value)} dir="ltr" /></label>}
         <div className="employee-table-picker"><b>{isKu ? 'ئەو مێزانەی کارمەند دەیبینێت' : 'الطاولات التي يمكن للموظف رؤيتها'}</b>
           {availableTables.map((table: AnyRecord) => <label key={table.id}><input type="checkbox" checked={assigned.includes(table.id)} onChange={(e) => setAssigned((prev) => e.target.checked ? [...prev, table.id] : prev.filter((id) => id !== table.id))} /><span>{isKu ? 'مێزی' : 'طاولة'} {table.label}</span></label>)}
         </div>
         {editing && <label className="check-line"><input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />{t.active}</label>}
-        <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={() => setDialogOpen(false)}>{t.cancel}</button><button className="button button-primary" disabled={busy || !name.trim() || !phone.trim()} type="submit">{busy && <LoaderCircle className="spin" size={15} />}{t.save}</button></div>
+        <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={() => setDialogOpen(false)}>{t.cancel}</button><button className="button button-primary" disabled={busy || !name.trim() || !phone.trim() || (!editing && employeePassword.length < 6)} type="submit">{busy && <LoaderCircle className="spin" size={15} />}{t.save}</button></div>
       </form>
     </Modal>}
   </>;

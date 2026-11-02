@@ -647,6 +647,10 @@ export async function cancelOrder(orderId: string): Promise<void> {
     if (order.status === 'paid' || order.status === 'cancelled') {
       throw new Error('This order cannot be cancelled.');
     }
+    const alreadyPaid = (order.payments ?? []).reduce((sum, payment) => sum + Number(payment.amountIqd || 0), 0);
+    if (alreadyPaid > 0) {
+      throw new Error('This order has a recorded payment. Record a refund before cancelling it.');
+    }
     const tableRef = order.tableId ? doc(ownerCollection('tables'), order.tableId) : null;
     // Complete every transaction read before performing the first write.
     const tableSnap = tableRef ? await transaction.get(tableRef) : null;

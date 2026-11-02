@@ -18,6 +18,11 @@ service cloud.firestore {
       return isActiveEmployee(ownerUid) && tableId != null
         && tableId in get(employeeAccessPath(ownerUid)).data.assignedTableIds;
     }
+    match /owners/{ownerUid}/staffLogin/{loginId} {
+      // Contains only the synthetic Firebase Auth email needed to resolve phone-based login.
+      allow read: if true;
+      allow create, update, delete: if isOwner(ownerUid);
+    }
     match /owners/{ownerUid}/admins/{adminId} { allow read, write: if isOwner(ownerUid); }
     match /owners/{ownerUid}/adminAccess/{adminUid} {
       allow read: if isOwner(ownerUid) || (request.auth != null && request.auth.uid == adminUid);

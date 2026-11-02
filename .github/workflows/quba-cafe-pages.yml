@@ -1,4 +1,5 @@
 name: Deploy QUBA Cafe to GitHub Pages
+# Rebuild deployment after verifying the Pages output directory.
 
 on:
   push:

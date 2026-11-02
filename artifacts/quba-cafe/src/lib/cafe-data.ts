@@ -183,11 +183,13 @@ export async function createEmployee(input: { name: string; phoneE164: string; p
   const ref = doc(db, 'owners', ownerUid, 'employees', phoneE164);
   const existing = await getDoc(ref);
   if (existing.exists() && existing.data().authUid) throw new Error('This employee already has a login account.');
-  const uid = await createEmployeeAuthAccount(phoneE164, input.password);
+  const account = await createEmployeeAuthAccount(phoneE164, input.password);
+  const { uid, authEmail } = account;
   const createdAt = existing.exists() ? existing.data().createdAt || new Date().toISOString() : new Date().toISOString();
   const now = new Date().toISOString();
   const profile = {
     authUid: uid,
+    authEmail,
     phoneE164,
     name: input.name.trim(),
     assignedTableIds: [...new Set(input.assignedTableIds)],
@@ -240,9 +242,10 @@ export async function createAdmin(input: { name: string; phoneE164: string; pass
   const adminRef = doc(db, 'owners', ownerUid, 'admins', phoneE164);
   const previous = await getDoc(adminRef);
   const previousUid = previous.exists() ? String(previous.data().authUid || '') : '';
-  const uid = await createAdminAuthAccount(phoneE164, input.password);
+  const account = await createAdminAuthAccount(phoneE164, input.password);
+  const { uid, authEmail } = account;
   const now = new Date().toISOString();
-  const profile = { authUid: uid, phoneE164, name: input.name.trim(), active: true, createdAt: previous.exists() ? previous.data().createdAt || now : now, updatedAt: now };
+  const profile = { authUid: uid, authEmail, phoneE164, name: input.name.trim(), active: true, createdAt: previous.exists() ? previous.data().createdAt || now : now, updatedAt: now };
   if (previousUid && previousUid !== uid) await deleteDoc(doc(db, 'owners', ownerUid, 'adminAccess', previousUid));
   await setDoc(adminRef, profile);
   await setDoc(doc(db, 'owners', ownerUid, 'adminAccess', uid), profile);

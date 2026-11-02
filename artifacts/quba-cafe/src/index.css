@@ -1110,3 +1110,50 @@ html[data-theme="dark"] .theme-toggle:hover{background:#355b48}
 html[data-theme="dark"] .table-detail-footer{background:rgba(38,33,46,.97)!important;border-color:#51465b!important;color:#f3edf8}
 html[data-theme="dark"] .empty-state,html[data-theme="dark"] .state-panel{color:#eeeaf4}
 @media(max-width:640px){.topbar-right{gap:6px}.theme-toggle{min-height:35px;padding:0 9px}.theme-toggle b{font-size:10px}.today-pill{font-size:9px}}
+
+
+/* QUBA typography: larger, clearer Kurdish/Arabic text */
+body { font-size:15px; line-height:1.75; }
+.nav-link { font-size:14px !important; min-height:46px; }
+.nav-caption,.side-status,.sidebar-restaurant small,.sidebar-restaurant b { font-size:12px !important; }
+.brand-type b { font-size:18px !important; }
+.crumb,.crumb b,.today-pill,.topbar-owner { font-size:13px !important; }
+.page-heading h1 { font-size:32px !important; line-height:1.45; }
+.page-eyebrow,.eyebrow { font-size:12px !important; }
+.welcome-row h2 { font-size:22px !important; line-height:1.6; }
+.welcome-row>div:first-child>p,.live-indicator { font-size:13px !important; }
+.panel-heading h3,.dashboard-section-title h3,.service-section-heading h3 { font-size:18px !important; }
+.panel-kicker,.text-link,.service-link { font-size:12px !important; }
+.metric-top,.metric-card>small,.metric-card>strong { font-size:inherit; }
+.metric-top { font-size:13px !important; }
+.metric-card>strong { font-size:22px !important; }
+.metric-card>small { font-size:12px !important; }
+.button,.page-wrap .button,button.primary-button { font-size:13px !important; min-height:42px; }
+.small-button,.order-actions .button { font-size:12px !important; }
+input,select,textarea,.form-field input,.form-field select,.form-field textarea,
+.settings-form input,.settings-form select,.search-box input { font-size:14px !important; min-height:43px; }
+.form-field>span:first-child,.check-line,.form-field label { font-size:13px !important; }
+.data-table th,.data-table td { font-size:13px !important; padding:14px 16px; }
+.filter-pills button,.quba-table-filters button { font-size:13px !important; }
+.quba-table-filters button b { font-size:12px !important; }
+.quba-tables-heading h2 { font-size:23px !important; }
+.quba-tables-heading p,.quba-table-search input { font-size:14px !important; }
+.quba-simple-table .table-tile-number { font-size:32px !important; }
+.quba-simple-table .quba-table-state,.quba-simple-table .table-tile-action,
+.quba-simple-table .table-tile-balance { font-size:14px !important; }
+.table-detail-head h2 { font-size:34px !important; }
+.table-detail-summary small,.table-detail-footer small,.table-history-head small { font-size:12px !important; }
+.table-history-line,.table-history-total { font-size:14px !important; }
+.service-tabs button,.service-order-row,.service-section-heading span { font-size:14px !important; }
+.order-lines>div,.order-note,.order-card-meta,.order-card-bottom,.picker-product b { font-size:13px !important; }
+.status-badge,.order-date,.order-table-tag { font-size:12px !important; }
+.theme-toggle { font-size:13px !important; min-height:42px; }
+@media(max-width:760px) {
+  .page-heading h1 { font-size:27px !important; }
+  .welcome-row h2 { font-size:19px !important; }
+  .nav-link { font-size:14px !important; }
+  .quba-tables-heading h2 { font-size:20px !important; }
+  .quba-simple-table .table-tile-number { font-size:29px !important; }
+  .button,.page-wrap .button,button.primary-button { font-size:12px !important; }
+  .data-table th,.data-table td { font-size:12px !important; }
+}

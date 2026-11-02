@@ -116,6 +116,15 @@ export async function createEmployeeProfileRecords(input: {
   });
 }
 
+export async function getActiveAdminProfile(user: User): Promise<Record<string, any> | null> {
+  if (!db || !ownerUid) return null;
+  const snapshot = await getDoc(doc(db, 'owners', ownerUid, 'adminAccess', user.uid));
+  if (!snapshot.exists()) return null;
+  const profile = snapshot.data();
+  if (profile.active !== true || profile.authUid !== user.uid) return null;
+  return { ...profile, phoneE164: String(profile.phoneE164 || '') };
+}
+
 export async function getActiveEmployeeProfile(user: User): Promise<Record<string, any> | null> {
   if (!db || !ownerUid) return null;
   const snapshot = await getDoc(doc(db, 'owners', ownerUid, 'employeeAccess', user.uid));

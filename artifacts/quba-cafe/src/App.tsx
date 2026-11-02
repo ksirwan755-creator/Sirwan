@@ -954,7 +954,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     <div className="table-detail-head">
       <button type="button" className="button button-quiet" onClick={() => setSelectedTableId(null)}>‹ {t.backToTables}</button>
       <div><span className="table-detail-kicker">QUBA · {t.tableNumber}</span><h2>{selectedTable.label}</h2><span className={activeOrders.length ? 'table-detail-state is-busy' : 'table-detail-state'}><i />{activeOrders.length ? t.tableOccupied : t.tableAvailable}</span></div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button type="button" className="button button-secondary" disabled={busy} onClick={() => void closeSelectedTable()}>{busy ? <LoaderCircle className="spin" size={15} /> : <X size={15} />}{t.closeTable}</button><button type="button" className="button button-primary" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button></div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button type="button" className="button button-secondary" disabled={busy} onClick={() => void closeSelectedTable()}>{busy ? <LoaderCircle className="spin" size={15} /> : <X size={15} />}{t.closeTable}</button></div>
     </div>
     <div className="table-detail-summary">
       <div><small>{locale === 'ku' ? 'کۆی داواکارییەکان' : 'عدد الطلبات'}</small><b>{tableOrders.length}</b></div>

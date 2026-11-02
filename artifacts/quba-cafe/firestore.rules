@@ -19,8 +19,10 @@ service cloud.firestore {
         && tableId in get(employeeAccessPath(ownerUid)).data.assignedTableIds;
     }
     match /owners/{ownerUid}/staffLogin/{loginId} {
-      // Contains only the synthetic Firebase Auth email needed to resolve phone-based login.
-      allow read: if true;
+      // Staff sign-in needs a direct document lookup before authentication.
+      // Allow that single-document get, but prevent public collection listing.
+      allow get: if true;
+      allow list: if isOwner(ownerUid);
       allow create, update, delete: if isOwner(ownerUid);
     }
     match /owners/{ownerUid}/admins/{adminId} { allow read, write: if isOwner(ownerUid); }

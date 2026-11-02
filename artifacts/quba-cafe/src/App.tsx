@@ -548,7 +548,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (data?.settings?.defaultLocale && (data.settings.defaultLocale === 'ku' || data.settings.defaultLocale === 'ar')) setLocale(data.settings.defaultLocale);
   }, [data?.settings?.defaultLocale, setLocale]);
   useEffect(() => {
-    if (path === '/login') setPath('/');
+    if (['/login', '/orders', '/categories', '/customers', '/reports'].includes(path)) setPath('/');
     else if (path === '/products') setPath('/menu');
   }, [path, setPath]);
   const snap = data || { categories: [], products: [], tables: [], orders: [], expenses: [], customers: [], settings: null };
@@ -569,15 +569,11 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (path === '/menu' || path === '/products') return <><DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} /></>;
     if (error) return <ErrorContent locale={locale} message={error} onRetry={() => window.location.reload()} />;
     if (path === '/') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/archive') return <ArchivePage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/service') return <ServicePage data={snap} locale={locale} t={t} />;
-    if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/employees') return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/expenses') return <DataPage kind="expenses" records={snap.expenses} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/reports') return <Reports data={snap} locale={locale} t={t} />;
     if (path === '/settings') return <SettingsPage settings={snap.settings} locale={locale} onLocale={setLocale} actions={dataState} notify={notify} t={t} />;
     return <NotFound locale={locale} />;
   };
@@ -609,7 +605,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
         <div className="topbar-right"><button className="theme-toggle" type="button" onClick={() => setDarkMode((value) => !value)} aria-label={darkMode ? (locale === 'ku' ? 'گۆڕین بۆ ڕۆشنایی' : 'التبديل إلى الفاتح') : (locale === 'ku' ? 'گۆڕین بۆ تاریکی' : 'التبديل إلى الداكن')} title={darkMode ? (locale === 'ku' ? 'ڕۆشنایی' : 'فاتح') : (locale === 'ku' ? 'تاریکی' : 'داكن')}><span>{darkMode ? <Sun size={17} /> : <Moon size={17} />}</span><b>{darkMode ? (locale === 'ku' ? 'ڕۆشنایی' : 'فاتح') : (locale === 'ku' ? 'تاریکی' : 'داكن')}</b></button><span className="today-pill"><CalendarDays size={15} />{new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date())}</span></div>
       </header>
       <div className="page-wrap">
-        <div className="page-heading"><div><p className="eyebrow page-eyebrow">QUBA · {t.ownerDesk}</p><h1>{pageTitle}</h1></div>{path === '/orders' && <button className="button button-primary" type="button" onClick={() => window.dispatchEvent(new Event('open-new-order'))}>{t.newOrder}</button>}</div>
+        
         {content()}
       </div>
     </main>
@@ -676,7 +672,6 @@ function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: an
     </section>
 
     <section className="dashboard-quick-actions" aria-label={isKu ? 'کردارە خێراکان' : 'إجراءات سريعة'}>
-      <Link href="/orders" className="quick-action quick-action-primary"><span><Plus size={20} /></span><b>{isKu ? 'داواکارییەکی نوێ' : 'طلب جديد'}</b><small>{isKu ? 'تۆمارکردنی داواکاری' : 'إضافة طلب للزبون'}</small></Link>
       <Link href="/tables" className="quick-action"><span><Utensils size={20} /></span><b>{isKu ? 'مێزەکان' : 'الطاولات'}</b><small>{isKu ? 'بینینی دۆخی مێز' : 'عرض حالة الطاولات'}</small></Link>
       <Link href="/employees" className="quick-action"><span><Users size={20} /></span><b>{isKu ? 'کارمەندان' : 'الموظفون'}</b><small>{isKu ? 'بەڕێوەبردنی کارمەندان' : 'إدارة الموظفين'}</small></Link>
     </section>
@@ -718,16 +713,11 @@ function Dashboard({ data, locale, t }: { data: AnyRecord; locale: Locale; t: an
     </section>
 
     <section className="dashboard-lower dashboard-redesign-lower">
-      <div className="panel recent-panel dashboard-recent">
-        <div className="panel-heading"><div><span className="panel-kicker">{t.todayFlow}</span><h3>{t.recentOrders}</h3></div><Link href="/orders" className="text-link">{t.viewAll}<ArrowUpRight size={15} /></Link></div>
-        {todaysOrders.length === 0 ? <EmptyState locale={locale} title={t.noOrders} detail={t.startOrder} /> : <div className="order-list">{todaysOrders.slice(0, 6).map((order: AnyRecord) => <OrderCompact key={order.id} order={order} data={data} locale={locale} t={t} />)}</div>}
-      </div>
       <aside className="panel dashboard-insights">
         <div className="panel-heading"><div><span className="panel-kicker">{isKu ? 'زانیارییە خێراکان' : 'معلومات سريعة'}</span><h3>{isKu ? 'دۆخی قوبە' : 'حالة قوبا'}</h3></div><span className="insight-coffee"><Coffee size={18} /></span></div>
         <div className="insight-row"><span className="insight-icon"><Utensils size={17} /></span><div><small>{isKu ? 'مێزی بەکارهاتوو' : 'الطاولات المستخدمة'}</small><b>{occupiedTables} / {totalTables}</b></div></div>
         <div className="insight-row"><span className="insight-icon"><ClipboardList size={17} /></span><div><small>{isKu ? 'داواکارییەکانی ئەمڕۆ' : 'طلبات اليوم'}</small><b>{todaysOrders.length}</b></div></div>
         <div className="insight-row"><span className="insight-icon"><Banknote size={17} /></span><div><small>{isKu ? 'زۆرترین فرۆشراو' : 'الأكثر مبيعاً'}</small><b>{topProduct ? topProduct[0] : '—'}</b></div></div>
-        <Link href="/reports" className="service-link">{t.reports}<ArrowUpRight size={15} /></Link>
       </aside>
     </section>
   </div>;
@@ -1051,35 +1041,6 @@ function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: 
 }
 
 
-function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
-  const [paymentOrder, setPaymentOrder] = useState<AnyRecord | null>(null);
-  const [cancelPrompt, setCancelPrompt] = useState<AnyRecord | null>(null);
-  const [newOrder, setNewOrder] = useState(false);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => { const open = () => setNewOrder(true); window.addEventListener('open-new-order', open); return () => window.removeEventListener('open-new-order', open); }, []);
-  const orders = data.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(o.status))).filter((o: AnyRecord) => (filter === 'all' || normalizeOrderStatus(o.status) === filter)).filter((o: AnyRecord) => JSON.stringify(o).toLowerCase().includes(search.toLowerCase()));
-  async function pay(amount: number, method: string) {
-    if (!paymentOrder) return;
-    setBusy(true);
-    try { await actions.addPayment(paymentOrder.id, { amountIqd: amount, method: method as any }); setPaymentOrder(null); notify(t.saved); }
-    catch { notify(t.serverError); } finally { setBusy(false); }
-  }
-  async function cancel(order: AnyRecord) {
-    setBusy(true);
-    try { await actions.cancelOrder(order.id); notify(t.saved); } catch { notify(t.serverError); } finally { setBusy(false); }
-  }
-  return <>
-    <div className="list-toolbar orders-toolbar"><label className="search-box"><Search size={17} /><input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-orders" /></label><select value={filter} onChange={(e) => setFilter(e.target.value)} data-testid="select-order-filter"><option value="all">{t.all}</option><option value="new">{t.orderNew}</option><option value="preparing">{t.orderPreparing}</option><option value="ready">{t.orderReady}</option><option value="delivered">{t.orderDelivered}</option></select></div>
-    {orders.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : t.noOrders} detail={search ? '' : t.startOrder} /> : <div className="order-cards">{orders.map((order: AnyRecord) => <OrderCard key={order.id} order={order} data={data} locale={locale} t={t} onPay={() => setPaymentOrder(order)} onCancel={() => setCancelPrompt(order)} busy={busy} actions={actions} notify={notify} />)}</div>}
-    {paymentOrder && <PaymentDialog order={paymentOrder} locale={locale} t={t} busy={busy} onClose={() => setPaymentOrder(null)} onPay={pay} />}
-    {cancelPrompt && <ConfirmDialog t={t} busy={busy} title={t.cancelOrder} prompt={t.confirmCancelOrder} onClose={() => setCancelPrompt(null)} onConfirm={async () => { await cancel(cancelPrompt); setCancelPrompt(null); }} />}
-    {newOrder && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} onClose={() => setNewOrder(false)} onCreate={async (payload) => { setBusy(true); try { await actions.createOrder(payload); setNewOrder(false); notify(t.saved); } catch { notify(t.serverError); } finally { setBusy(false); } }} />}
-  </>;
-}
-
-
 function ArchivePage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
   const [search, setSearch] = useState('');
   const [removing, setRemoving] = useState<AnyRecord | null>(null);
@@ -1194,44 +1155,6 @@ function PaymentDialog({ order, locale, t, busy, onClose, onPay }: { order: AnyR
     <label className="form-field"><span>{t.paymentMethod}</span><select value={method} onChange={(e) => setMethod(e.target.value)}><option value="cash">{t.cash}</option><option value="card">{t.card}</option><option value="other">{t.other}</option></select></label>
     <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={onClose}>{t.cancel}</button><button className="button button-primary" disabled={busy || !Number(amount) || Number(amount) > remaining} type="submit">{t.save}</button></div>
   </form></Modal>;
-}
-
-function Reports({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {
-  const [from, setFrom] = useState(todayKey(new Date(Date.now() - 6 * 86400000)));
-  const [to, setTo] = useState(todayKey());
-  const inRangeOrders = data.orders.filter((order: AnyRecord) => {
-    const key = todayKey(asDate(order.createdAt));
-    return key >= from && key <= to;
-  });
-  const salesByDay = useMemo(() => {
-    const map: Record<string, number> = {};
-    data.orders.forEach((order: AnyRecord) => {
-      (order.payments || []).forEach((payment: AnyRecord) => {
-        const key = todayKey(asDate(payment.createdAt || order.createdAt));
-        if (key >= from && key <= to) map[key] = (map[key] || 0) + Number(payment.amountIqd || 0);
-      });
-    });
-    return map;
-  }, [data.orders, from, to]);
-  const totalSales = Object.values(salesByDay).reduce((sum, amount) => sum + amount, 0);
-  const unpaidOrders = inRangeOrders.filter((order: AnyRecord) => normalizeOrderStatus(order.status) !== 'paid' && normalizeOrderStatus(order.status) !== 'cancelled' && Number(order.totalIqd || 0) > (order.payments || []).reduce((sum: number, p: AnyRecord) => sum + Number(p.amountIqd || 0), 0));
-  const completedOrders = inRangeOrders.filter((order: AnyRecord) => ['paid', 'delivered'].includes(normalizeOrderStatus(order.status)));
-  const cancelledOrders = inRangeOrders.filter((order: AnyRecord) => normalizeOrderStatus(order.status) === 'cancelled');
-  const productCounts: Record<string, number> = {};
-  inRangeOrders.forEach((order: AnyRecord) => {
-    (order.items || []).forEach((item: AnyRecord) => {
-      const key = item.nameKu || item.nameAr || item.productId;
-      productCounts[key] = (productCounts[key] || 0) + Number(item.quantity || 0);
-    });
-  });
-  const topProducts = Object.entries(productCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const reportOrders = inRangeOrders.filter((order: AnyRecord) => normalizeOrderStatus(order.status) !== 'cancelled');
-  return <div className="reports-content">
-    <div className="report-filters"><span><CalendarDays size={16} />{t.filterDate}</span><label>{t.from}<input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} /></label><label>{t.to}<input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} /></label></div>
-    <div className="report-metrics"><MetricCard icon={ArrowUpRight} label={t.revenue} value={formatIQD(totalSales, locale)} note={`${reportOrders.length} ${t.ordersCount}`} tone="green" /><MetricCard icon={ClipboardList} label={t.unpaidOrders} value={String(unpaidOrders.length)} note={t.openOrders} tone="blue" /><MetricCard icon={CreditCard} label={t.completedOrders} value={String(completedOrders.length)} note={t.paid} tone="amber" /><MetricCard icon={CircleAlert} label={t.cancelled} value={String(cancelledOrders.length)} note={t.orderCancelled} tone="rose" /></div>
-    <section className="panel report-chart"><div className="panel-heading"><div><span className="panel-kicker">{t.reportTitle}</span><h3>{t.revenue}</h3></div><span className="report-range">{from} → {to}</span></div>{Object.keys(salesByDay).length === 0 ? <EmptyState locale={locale} /> : <div className="bar-chart">{Object.entries(salesByDay).sort(([a], [b]) => a.localeCompare(b)).map(([day, amount]) => <div key={day} className="bar-column"><span className="bar-value">{formatIQD(amount, locale)}</span><span className="bar-fill" style={{ height: `${Math.max(12, (amount / Math.max(...Object.values(salesByDay), 1)) * 100)}%` }} /><small>{day.slice(5)}</small></div>)}</div>}</section>
-    <section className="panel report-order-table"><div className="panel-heading"><div><span className="panel-kicker">{t.mostPopular}</span><h3>{t.products}</h3></div></div><ul className="popular-list">{topProducts.length === 0 ? <li>{t.noResults}</li> : topProducts.map(([name, count], index) => <li key={`${name}-${index}`}><span>{name}</span><b>{count}</b></li>)}</ul></section>
-  </div>;
 }
 
 function SettingsPage({ settings, locale, onLocale, actions, notify, t }: { settings: AnyRecord | null; locale: Locale; onLocale: (locale: Locale) => void; actions: AnyRecord; notify: (message: string) => void; t: any }) {

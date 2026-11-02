@@ -1162,3 +1162,11 @@ input,select,textarea,.form-field input,.form-field select,.form-field textarea,
   .button,.page-wrap .button,button.primary-button { font-size:12px !important; }
   .data-table th,.data-table td { font-size:12px !important; }
 }
+
+
+/* Keep the expanded navigation usable on short mobile screens. */
+.sidebar-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}

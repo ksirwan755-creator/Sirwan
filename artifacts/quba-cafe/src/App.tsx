@@ -911,6 +911,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
       for (const order of activeOrders) await actions.updateOrderStatus(order.id, 'paid');
       await actions.updateTableStatus(selectedTable.id, 'available');
       notify(t.tableClosedSuccess);
+      setSelectedTableId(null);
     } catch (error) {
       notify(recordActionError(error, t));
     } finally {

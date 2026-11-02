@@ -146,9 +146,12 @@ const copy = {
 
 const navItems = [
   { path: '/', key: 'tables', icon: Utensils },
+  { path: '/reports', key: 'reports', icon: LayoutDashboard },
   { path: '/archive', key: 'archive', icon: Archive },
   { path: '/menu', key: 'products', icon: Coffee },
+  { path: '/categories', key: 'categories', icon: Boxes },
   { path: '/service', key: 'service', icon: Coffee },
+  { path: '/customers', key: 'customers', icon: Users },
   { path: '/employees', key: 'employees', icon: Users },
   { path: '/admins', key: 'admins', icon: BriefcaseBusiness },
   { path: '/expenses', key: 'expenses', icon: Wallet },
@@ -578,7 +581,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t, isOwner }: { locale
     if (data?.settings?.defaultLocale && (data.settings.defaultLocale === 'ku' || data.settings.defaultLocale === 'ar')) setLocale(data.settings.defaultLocale);
   }, [data?.settings?.defaultLocale, setLocale]);
   useEffect(() => {
-    if (['/login', '/orders', '/categories', '/customers', '/reports'].includes(path)) setPath('/');
+    if (['/login', '/orders'].includes(path)) setPath('/');
     else if (path === '/products') setPath('/menu');
   }, [path, setPath]);
   const snap = data || { categories: [], products: [], tables: [], orders: [], expenses: [], customers: [], settings: null };
@@ -601,6 +604,9 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t, isOwner }: { locale
     if (path === '/') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/archive') return <ArchivePage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
+    if (path === '/reports') return <Dashboard data={snap} locale={locale} t={t} />;
+    if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
+    if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/service') return <ServicePage data={snap} locale={locale} t={t} />;
     if (path === '/admins' && isOwner) return <AdminsPage locale={locale} actions={dataState} notify={notify} />;
     if (path === '/employees') return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;

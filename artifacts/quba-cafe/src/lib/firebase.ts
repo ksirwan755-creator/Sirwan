@@ -73,7 +73,7 @@ function legacyLoginEmail(role: 'admin' | 'employee', phone: string): string {
 async function signInStaff(role: 'admin' | 'employee', phone: string, password: string): Promise<User> {
   if (!auth || !db || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
   const normalized = phone.trim();
-  if (!/^\\+[1-9]\\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format.');
+  if (!/^\+[1-9]\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format.');
   const profileRef = doc(db, 'owners', ownerUid, role === 'admin' ? 'admins' : 'employees', normalized);
   const profile = await getDoc(profileRef);
   const savedEmail = profile.exists() ? String(profile.data().authEmail || '') : '';

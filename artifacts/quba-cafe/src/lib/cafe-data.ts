@@ -512,6 +512,46 @@ export async function addPayment(orderId: string, input: { amountIqd: number; me
   });
 }
 
+export async function addTablePayment(tableId: string, input: { amountIqd: number; method: PaymentMethod }): Promise<void> {
+  assertOwner();
+  assertWholeAmount(input.amountIqd, 'Payment amount');
+  if (!db) throw new Error('Firebase is not configured for this app.');
+  const tableRef = doc(ownerCollection('tables'), tableId);
+  const ordersQuery = query(ownerCollection('orders'), where('tableId', '==', tableId));
+
+  await runTransaction(db, async (transaction) => {
+    // Read every order and the table before making any writes.
+    const ordersSnapshot = await transaction.get(ordersQuery);
+    const tableSnapshot = await transaction.get(tableRef);
+    if (!tableSnapshot.exists()) throw new Error('Table not found.');
+    const openOrders = ordersSnapshot.docs
+      .filter((item) => !['paid', 'cancelled'].includes(String(item.data().status)))
+      .map((item) => ({ ref: item.ref, data: item.data() }));
+    if (!openOrders.length) throw new Error('This table has no open orders.');
+
+    const balances = openOrders.map((order) => {
+      const payments = Array.isArray(order.data.payments) ? order.data.payments : [];
+      const paid = payments.reduce((sum: number, payment: any) => sum + Number(payment.amountIqd || 0), 0);
+      return { ...order, payments, due: Math.max(0, Number(order.data.totalIqd || 0) - paid) };
+    }).filter((order) => order.due > 0);
+    const totalDue = balances.reduce((sum, order) => sum + order.due, 0);
+    if (input.amountIqd !== totalDue) {
+      throw new Error('Please collect the exact remaining balance for this table.');
+    }
+
+    const now = new Date().toISOString();
+    for (const order of balances) {
+      transaction.update(order.ref, {
+        payments: [...order.payments, { amountIqd: order.due, method: input.method, createdAt: now }],
+        status: 'paid',
+        paidAt: now,
+        updatedAt: now,
+      });
+    }
+    transaction.update(tableRef, { status: 'available', active: true, updatedAt: now });
+  });
+}
+
 export async function cancelOrder(orderId: string): Promise<void> {
   assertOwner();
   if (!db) throw new Error('Firebase is not configured for this app.');
@@ -660,6 +700,7 @@ export function useCafeData() {
     ensureDefaultTables,
     updateOrderStatus,
     addPayment,
+    addTablePayment,
     cancelOrder,
     updateTableStatus,
     upsertCustomer,

@@ -274,7 +274,7 @@ function App() {
         setAuthError(t.notOwner);
       }
     } catch { setAuthError(t.loginError); }
-  }} onEmployeeSignIn={async (phone, employeePassword) => { setAuthError(''); try { await signInAdmin(phone, employeePassword); } catch { await signInEmployee(phone, employeePassword); } }} />;
+  }} onEmployeeSignIn={async (phone, employeePassword) => { setAuthError(''); try { await signInAdmin(phone, employeePassword); } catch (adminError) { try { await signInEmployee(phone, employeePassword); } catch (employeeError) { throw employeeError || adminError; } } }} />;
   if (employeeProfile) return <EmployeeOrdersScreen profile={employeeProfile} locale={locale} onLocale={setLocale} onSignOut={handleSignOut} />;
   return (
     <QueryClientProvider client={queryClient}>
@@ -372,8 +372,12 @@ function LoginScreen({ locale, onLocale, authError, onSignIn, onEmployeeSignIn }
     event.preventDefault(); setBusy(true); setLocalError('');
     try {
       await onEmployeeSignIn(phone.trim(), password);
-    } catch {
-      setLocalError(locale === 'ku' ? 'ژمارەی مۆبایل یان وشەی نهێنی هەڵەیە، یان هەژمارەکە ناچالاکە.' : 'رقم الهاتف أو كلمة المرور غير صحيحة، أو أن الحساب غير نشط.');
+    } catch (error) {
+      const detail = error && typeof error === 'object' ? error as { code?: string; message?: string } : {};
+      const reason = detail.code || detail.message || String(error || 'unknown-error');
+      setLocalError(locale === 'ku'
+        ? `چوونەژوورەوە سەرکەوتوو نەبوو. هۆکاری تەکنیکی: ${reason}`
+        : `تعذّر تسجيل الدخول. السبب التقني: ${reason}`);
     } finally { setBusy(false); }
   }
   return <main className="gate-shell" dir="rtl">

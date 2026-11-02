@@ -561,7 +561,7 @@ export async function addPayment(orderId: string, input: { amountIqd: number; me
     const now = new Date().toISOString();
     transaction.update(orderRef, {
       payments: nextPayments,
-      status: isPaid ? 'paid' : 'delivered',
+      status: isPaid ? 'paid' : order.status,
       paidAt: isPaid ? now : null,
       updatedAt: now,
     });
@@ -638,18 +638,18 @@ export async function cancelOrder(orderId: string): Promise<void> {
     if (order.status === 'paid' || order.status === 'cancelled') {
       throw new Error('This order cannot be cancelled.');
     }
-    transaction.update(orderRef, { status: 'cancelled', updatedAt: new Date().toISOString() });
+    const tableRef = order.tableId ? doc(ownerCollection('tables'), order.tableId) : null;
+    // Complete every transaction read before performing the first write.
+    const tableSnap = tableRef ? await transaction.get(tableRef) : null;
+    const now = new Date().toISOString();
+    transaction.update(orderRef, { status: 'cancelled', updatedAt: now });
 
-    if (order.tableId) {
-      const tableRef = doc(ownerCollection('tables'), order.tableId);
-      const tableSnap = await transaction.get(tableRef);
-      if (tableSnap.exists()) {
-        transaction.update(tableRef, {
-          status: 'available',
-          active: true,
-          updatedAt: new Date().toISOString(),
-        });
-      }
+    if (tableRef && tableSnap?.exists()) {
+      transaction.update(tableRef, {
+        status: 'available',
+        active: true,
+        updatedAt: now,
+      });
     }
   });
 }

@@ -850,7 +850,6 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [menuNameAr, setMenuNameAr] = useState('');
   const [menuPrice, setMenuPrice] = useState('');
   const [menuKind, setMenuKind] = useState<'food' | 'beverage'>('food');
-  const [, setPath] = useLocation();
   useEffect(() => {
     let active = true;
     actions.ensureDefaultTables().catch(() => { if (active) notify(t.serverError); }).finally(() => { if (active) setPreparing(false); });

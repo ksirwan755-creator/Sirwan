@@ -872,14 +872,17 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     if (!paymentOrder || busy) return;
     setBusy(true);
     try {
-      const orderDue = Math.max(0, Number(paymentOrder.totalIqd || 0) - (paymentOrder.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0));
-      await actions.addPayment(paymentOrder.id, { amountIqd: amount, method });
+      if (paymentOrder.isWholeTablePayment) {
+        await actions.addTablePayment(paymentOrder.tableId, { amountIqd: amount, method });
+        setSelectedTableId(null);
+      } else {
+        await actions.addPayment(paymentOrder.id, { amountIqd: amount, method });
+        const orderDue = Math.max(0, Number(paymentOrder.totalIqd || 0) - (paymentOrder.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0));
+        const thisOrderWillBePaid = amount >= orderDue;
+        const noOtherOpenOrders = activeOrders.every((order: AnyRecord) => order.id === paymentOrder.id);
+        if (thisOrderWillBePaid && noOtherOpenOrders) setSelectedTableId(null);
+      }
       setPaymentOrder(null);
-      // When this payment settles the final open order, clear the table screen
-      // so the table is immediately ready for the next customer.
-      const thisOrderWillBePaid = amount >= orderDue;
-      const noOtherOpenOrders = activeOrders.every((order: AnyRecord) => order.id === paymentOrder.id);
-      if (thisOrderWillBePaid && noOtherOpenOrders) setSelectedTableId(null);
       notify(t.saved);
     } catch (error) { notify(recordActionError(error, t)); }
     finally { setBusy(false); }
@@ -964,8 +967,18 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const tableCards = sortedTables.map((table: AnyRecord) => {
     const openOrders = data.orders.filter((item: AnyRecord) => item.tableId === table.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(item.status)));
     const order = openOrders[0];
-    const paid = order ? (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0) : 0;
-    return { table, order, due: order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0, isActive: openOrders.length > 0 };
+    const due = openOrders.reduce((sum: number, activeOrder: AnyRecord) => {
+      const paid = (activeOrder.payments || []).reduce((paidSum: number, payment: AnyRecord) => paidSum + Number(payment.amountIqd || 0), 0);
+      return sum + Math.max(0, Number(activeOrder.totalIqd || 0) - paid);
+    }, 0);
+    const tablePaymentOrder = openOrders.length ? {
+      id: `table-${table.id}`,
+      tableId: table.id,
+      totalIqd: due,
+      payments: [],
+      isWholeTablePayment: true,
+    } : null;
+    return { table, order: tablePaymentOrder, due, isActive: openOrders.length > 0 };
   });
   const activeTableCards = tableCards.filter((item: AnyRecord) => item.isActive);
   const freeTableCards = tableCards.filter((item: AnyRecord) => !item.isActive);

@@ -11,7 +11,7 @@ import {
   Activity, Archive, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
   ChevronDown, CircleAlert, ClipboardList, Coffee, CreditCard, FileBarChart2,
   Globe2, LayoutDashboard, LoaderCircle, LogOut, Menu, Moon, Sun, Pencil, Plus, Search, Settings2,
-  Trash2, Users, Utensils, Wallet, X, ShieldCheck,
+  Trash2, Users, Utensils, Wallet, X,
 } from 'lucide-react';
 import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
@@ -57,7 +57,7 @@ const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
     dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
-    orders: 'داواکارییەکان', archive: 'ئەرشیف', archiveRemove: 'لابردن لە ئەرشیف', archiveConfirm: 'دڵنیایت دەتەوێت ئەم تۆمارە لە ئەرشیف لاببەیت؟ مێژووی فرۆشتن و ڕاپۆرتەکان دەمێننەوە.', quickOrder: 'داواکاری خێرا', customers: 'کڕیارەکان', employees: 'کارمەندان', admins: 'ئەدمینەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
+    orders: 'داواکارییەکان', archive: 'ئەرشیف', archiveRemove: 'لابردن لە ئەرشیف', archiveConfirm: 'دڵنیایت دەتەوێت ئەم تۆمارە لە ئەرشیف لاببەیت؟ مێژووی فرۆشتن و ڕاپۆرتەکان دەمێننەوە.', quickOrder: 'داواکاری خێرا', customers: 'کڕیارەکان', employees: 'کارمەندان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
@@ -102,7 +102,7 @@ const copy = {
   ar: {
     brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
     dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
-    orders: 'الطلبات', archive: 'الأرشيف', archiveRemove: 'إزالة من الأرشيف', archiveConfirm: 'هل تريد إزالة هذا السجل من الأرشيف؟ ستبقى بيانات المبيعات والتقارير محفوظة.', quickOrder: 'طلب سريع', customers: 'الزبائن', employees: 'الموظفون', admins: 'المشرفون', expenses: 'المصروفات', reports: 'التقارير',
+    orders: 'الطلبات', archive: 'الأرشيف', archiveRemove: 'إزالة من الأرشيف', archiveConfirm: 'هل تريد إزالة هذا السجل من الأرشيف؟ ستبقى بيانات المبيعات والتقارير محفوظة.', quickOrder: 'طلب سريع', customers: 'الزبائن', employees: 'الموظفون', expenses: 'المصروفات', reports: 'التقارير',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
@@ -157,7 +157,6 @@ const navItems = [
   { path: '/service', key: 'service', icon: Coffee },
   { path: '/customers', key: 'customers', icon: Users },
   { path: '/employees', key: 'employees', icon: Users },
-  { path: '/admins', key: 'admins', icon: ShieldCheck },
   { path: '/expenses', key: 'expenses', icon: Wallet },
   { path: '/reports', key: 'reports', icon: FileBarChart2 },
   { path: '/settings', key: 'settings', icon: Settings2 },
@@ -279,13 +278,13 @@ function App() {
       }
     } catch { setAuthError(t.loginError); }
   }} onEmployeeSignIn={async (phone, employeePassword) => { setAuthError(''); await signInEmployee(phone, employeePassword); }} />;
-  if (employeeProfile && employeeProfile.role !== 'super_admin') return <EmployeeOrdersScreen profile={employeeProfile} locale={locale} onLocale={setLocale} onSignOut={handleSignOut} />;
+  if (employeeProfile) return <EmployeeOrdersScreen profile={employeeProfile} locale={locale} onLocale={setLocale} onSignOut={handleSignOut} />;
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <RoutedBoundary>
-            <AuthenticatedApp locale={locale} setLocale={setLocale} onSignOut={handleSignOut} t={t} isOwner={!employeeProfile} />
+            <AuthenticatedApp locale={locale} setLocale={setLocale} onSignOut={handleSignOut} t={t} />
           </RoutedBoundary>
         </WouterRouter>
         <Toaster />
@@ -541,51 +540,7 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
   </>;
 }
 
-
-function AdminsPage({ employees, locale, actions, notify }: { employees: AnyRecord[]; locale: Locale; actions: AnyRecord; notify: (message: string) => void }) {
-  const [busyPhone, setBusyPhone] = useState('');
-  const isKu = locale === 'ku';
-  const admins = employees.filter((employee) => employee.role === 'super_admin');
-  async function changeRole(employee: AnyRecord) {
-    const nextRole = employee.role === 'super_admin' ? 'employee' : 'super_admin';
-    const confirmText = nextRole === 'super_admin'
-      ? (isKu ? 'دڵنیایت دەتەوێت ئەم کارمەندە بکەیتە ئەدمینی تەواو؟' : 'هل تريد منح هذا الموظف صلاحية المشرف الكامل؟')
-      : (isKu ? 'دڵنیایت دەتەوێت مافی ئەدمینی لێ بسەنیتەوە؟' : 'هل تريد سحب صلاحية المشرف منه؟');
-    if (!window.confirm(confirmText)) return;
-    setBusyPhone(employee.phoneE164);
-    try {
-      await actions.setEmployeeRole(employee.phoneE164, nextRole);
-      notify(nextRole === 'super_admin'
-        ? (isKu ? 'ئەدمین زیادکرا؛ بۆ دەستپێکردنی داشبۆرد جارێکی تر بچێتە ژوورەوە.' : 'تمت الترقية؛ يجب تسجيل الدخول مجدداً.')
-        : (isKu ? 'مافی ئەدمینی لابرا.' : 'تم سحب صلاحية المشرف.'));
-    } catch (error) {
-      notify(error instanceof Error ? error.message : (isKu ? 'هەڵە ڕوویدا' : 'حدث خطأ'));
-    } finally { setBusyPhone(''); }
-  }
-  return <section className="data-section">
-    <div className="section-heading">
-      <div><h2>{isKu ? 'بەڕێوەبەرانی قوبە' : 'مشرفو قوبا'}</h2><p className="muted">{isKu ? 'تەنها خاوەن قوبە دەتوانێت ئەدمین زیاد بکات یان مافی ئەدمینی لاببات.' : 'المالك وحده يستطيع إضافة المشرفين أو سحب صلاحياتهم.'}</p></div>
-      <span className="count-pill">{admins.length}</span>
-    </div>
-    <div className="panel" style={{ padding: 16, marginBottom: 16 }}>
-      <b>{isKu ? 'ئەدمینە چالاکەکان' : 'المشرفون الحاليون'}</b>
-      {admins.length === 0 ? <p className="muted">{isKu ? 'هێشتا ئەدمینێک نییە؛ لە لیستی خوارەوە کارمەندێک هەڵبژێرە.' : 'لا يوجد مشرفون بعد؛ اختر موظفاً من القائمة.'}</p> :
-        <div className="employee-admin-list">{admins.map((employee) => <article className="panel employee-admin-card" key={employee.phoneE164}>
-          <div><b>{employee.name}</b><small dir="ltr">{employee.phoneE164}</small><small>{isKu ? 'ئەدمینی تەواو' : 'مشرف كامل'}</small></div>
-          <button className="button button-secondary small-button" type="button" disabled={busyPhone === employee.phoneE164 || employee.active === false} onClick={() => void changeRole(employee)}>{isKu ? 'لابردنی ئەدمین' : 'إلغاء الإشراف'}</button>
-        </article>)}</div>}
-    </div>
-    <div className="section-heading"><div><h3>{isKu ? 'هەڵبژاردنی کارمەند بۆ ئەدمین' : 'اختيار موظف ليصبح مشرفاً'}</h3><p className="muted">{isKu ? 'کارمەندی ناچالاک ناتوانرێت ببێتە ئەدمین.' : 'لا يمكن ترقية موظف غير نشط.'}</p></div></div>
-    {employees.length === 0 ? <div className="empty-state"><Users size={28} /><p>{isKu ? 'هیچ کارمەندێک تۆمار نەکراوە.' : 'لا يوجد موظفون مسجلون.'}</p></div> :
-      <div className="employee-admin-list">{employees.map((employee) => <article className="panel employee-admin-card" key={employee.phoneE164}>
-        <div><b>{employee.name}</b><small dir="ltr">{employee.phoneE164}</small><small>{employee.active === false ? (isKu ? 'ناچالاک' : 'غير نشط') : (isKu ? 'چالاک' : 'نشط')}</small></div>
-        <span className={employee.role === 'super_admin' ? 'status-badge badge-paid' : 'status-badge'}>{employee.role === 'super_admin' ? (isKu ? 'ئەدمین' : 'مشرف') : (isKu ? 'کارمەند' : 'موظف')}</span>
-        {employee.role !== 'super_admin' && <button className="button button-primary small-button" type="button" disabled={busyPhone === employee.phoneE164 || employee.active === false} onClick={() => void changeRole(employee)}>{busyPhone === employee.phoneE164 ? <LoaderCircle className="spin" size={15} /> : <ShieldCheck size={15} />}{isKu ? 'کردنە ئەدمین' : 'ترقية إلى مشرف'}</button>}
-      </article>)}</div>}
-  </section>;
-}
-
-function AuthenticatedApp({ locale, setLocale, onSignOut, t, isOwner }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => Promise<void>; t: any; isOwner: boolean }) {
+function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => Promise<void>; t: any }) {
   const dataState = useCafeData();
   const { data, loading, error } = dataState;
   const [path, setPath] = useLocation();
@@ -629,11 +584,10 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t, isOwner }: { locale
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/service') return <ServicePage data={snap} locale={locale} t={t} />;
     if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/employees' && isOwner) return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/admins' && isOwner) return <AdminsPage employees={snap.employees || []} locale={locale} actions={dataState} notify={notify} />;
+    if (path === '/employees') return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/expenses') return <DataPage kind="expenses" records={snap.expenses} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/reports') return <Reports data={snap} locale={locale} t={t} />;
-    if (path === '/settings' && isOwner) return <SettingsPage settings={snap.settings} locale={locale} onLocale={setLocale} actions={dataState} notify={notify} t={t} />;
+    if (path === '/settings') return <SettingsPage settings={snap.settings} locale={locale} onLocale={setLocale} actions={dataState} notify={notify} t={t} />;
     return <NotFound locale={locale} />;
   };
   return <div className="app-shell" dir="rtl">
@@ -643,7 +597,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t, isOwner }: { locale
         <div className="sidebar-restaurant"><span className="restaurant-avatar">Q</span><div><b>{localized(snap.settings, locale, 'restaurantName') || 'QUBA'}</b><small>{t.owner}</small></div><ChevronDown size={15} /></div>
         <p className="nav-caption">{locale === 'ku' ? 'بەڕێوەبردن' : 'الإدارة'}</p>
         <nav className="main-nav">
-          {navItems.filter((item) => isOwner || !['employees', 'admins', 'settings'].includes(item.key)).map(({ path: itemPath, key, icon: Icon }) => <Link key={itemPath} href={itemPath} className={`nav-link ${path === itemPath ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
+          {navItems.map(({ path: itemPath, key, icon: Icon }) => <Link key={itemPath} href={itemPath} className={`nav-link ${path === itemPath ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
             <Icon size={18} strokeWidth={1.8} /><span>{t[key]}</span>{key === 'orders' && snap.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(o.status))).length > 0 && <i className="nav-badge" />}
           </Link>)}
         </nav>

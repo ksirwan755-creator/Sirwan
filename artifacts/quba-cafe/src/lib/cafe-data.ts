@@ -439,24 +439,24 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
     if (!snapshot.exists()) throw new Error('Order not found.');
     const order = snapshot.data() as Omit<CafeOrder, 'id'>;
     const nextStatus = normalizeOrderStatus(status);
+    const tableRef = order.tableId ? doc(ownerCollection('tables'), order.tableId) : null;
+    // Firestore requires every transaction read to finish before the first write.
+    const tableSnap = tableRef ? await transaction.get(tableRef) : null;
+    const now = new Date().toISOString();
 
     transaction.update(orderRef, {
       status: nextStatus,
-      updatedAt: new Date().toISOString(),
-      paidAt: nextStatus === 'paid' ? new Date().toISOString() : order.paidAt ?? null,
+      updatedAt: now,
+      paidAt: nextStatus === 'paid' ? now : order.paidAt ?? null,
     });
 
-    if (order.tableId) {
-      const tableRef = doc(ownerCollection('tables'), order.tableId);
-      const tableSnap = await transaction.get(tableRef);
-      if (tableSnap.exists()) {
-        const nextTableStatus = nextStatus === 'paid' || nextStatus === 'cancelled' ? 'available' : 'occupied';
-        transaction.update(tableRef, {
-          status: normalizeTableStatus(nextTableStatus),
-          active: true,
-          updatedAt: new Date().toISOString(),
-        });
-      }
+    if (tableRef && tableSnap?.exists()) {
+      const nextTableStatus = nextStatus === 'paid' || nextStatus === 'cancelled' ? 'available' : 'occupied';
+      transaction.update(tableRef, {
+        status: normalizeTableStatus(nextTableStatus),
+        active: true,
+        updatedAt: now,
+      });
     }
   });
 }
@@ -472,6 +472,9 @@ export async function addPayment(orderId: string, input: { amountIqd: number; me
     if (!snapshot.exists()) throw new Error('Order not found.');
     const order = snapshot.data() as Omit<CafeOrder, 'id'>;
     if (order.status === 'cancelled') throw new Error('Cancelled orders cannot receive payments.');
+    const tableRef = order.tableId ? doc(ownerCollection('tables'), order.tableId) : null;
+    // Read the table before writing the order; otherwise Firestore rejects the transaction.
+    const tableSnap = tableRef ? await transaction.get(tableRef) : null;
 
     const payments = order.payments ?? [];
     const paidIqd = payments.reduce((sum, payment) => sum + payment.amountIqd, 0);
@@ -490,24 +493,21 @@ export async function addPayment(orderId: string, input: { amountIqd: number; me
     ];
     const isPaid = nextPayments.reduce((sum, payment) => sum + payment.amountIqd, 0) >= order.totalIqd;
 
+    const now = new Date().toISOString();
     transaction.update(orderRef, {
       payments: nextPayments,
       status: isPaid ? 'paid' : 'delivered',
-      paidAt: isPaid ? new Date().toISOString() : null,
-      updatedAt: new Date().toISOString(),
+      paidAt: isPaid ? now : null,
+      updatedAt: now,
     });
 
-    if (order.tableId) {
-      const tableRef = doc(ownerCollection('tables'), order.tableId);
-      const tableSnap = await transaction.get(tableRef);
-      if (tableSnap.exists()) {
-        const nextTableStatus = isPaid ? 'available' : 'occupied';
-        transaction.update(tableRef, {
-          status: normalizeTableStatus(nextTableStatus),
-          active: true,
-          updatedAt: new Date().toISOString(),
-        });
-      }
+    if (tableRef && tableSnap?.exists()) {
+      const nextTableStatus = isPaid ? 'available' : 'occupied';
+      transaction.update(tableRef, {
+        status: normalizeTableStatus(nextTableStatus),
+        active: true,
+        updatedAt: now,
+      });
     }
   });
 }

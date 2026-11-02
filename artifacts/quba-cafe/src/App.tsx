@@ -391,7 +391,7 @@ function LoginScreen({ locale, onLocale, authError, onSignIn, onEmployeeSignIn }
         <h2>{t.loginTitle}</h2><p className="gate-copy">{t.loginText}</p>
         <div className="login-mode-tabs">
           <button type="button" className={mode === 'owner' ? 'active' : ''} onClick={() => { setMode('owner'); setLocalError(''); }}>{locale === 'ku' ? 'خاوەن' : 'المالك'}</button>
-          <button type="button" className={mode === 'employee' ? 'active' : ''} onClick={() => { setMode('employee'); setLocalError(''); }}>{locale === 'ku' ? 'کارمەند' : 'موظف'}</button>
+          <button type="button" className={mode === 'employee' ? 'active' : ''} onClick={() => { setMode('employee'); setLocalError(''); }}>{locale === 'ku' ? 'کارمەند / بەڕێوەبەر' : 'موظف / مدير'}</button>
         </div>
         {mode === 'owner' ? <form onSubmit={submitOwner}>
           <label className="field-label" htmlFor="owner-email">{t.email}</label>
@@ -401,7 +401,7 @@ function LoginScreen({ locale, onLocale, authError, onSignIn, onEmployeeSignIn }
           {authError && <div className="inline-error" role="alert" data-testid="status-auth-error">{authError}</div>}
           <button className="button button-primary login-submit" type="submit" disabled={busy} data-testid="button-login">{busy && <LoaderCircle className="spin" size={16} />}{t.login}<ArrowUpRight size={16} /></button>
         </form> : <form onSubmit={submitEmployee}>
-          <p className="employee-login-hint">{locale === 'ku' ? 'ژمارەی مۆبایل و وشەی نهێنییەکەی خاوەن بنووسە.' : 'أدخل رقم الهاتف وكلمة المرور التي أعطاها لك المالك.'}</p>
+          <p className="employee-login-hint">{locale === 'ku' ? 'کارمەند یان بەڕێوەبەر: ژمارەی مۆبایل و وشەی نهێنی بنووسە.' : 'للموظف أو المدير: أدخل رقم الهاتف وكلمة المرور.'}</p>
           <label className="field-label" htmlFor="employee-phone">{t.phone}</label>
           <input id="employee-phone" data-testid="input-employee-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="+9647XXXXXXXXX" required value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
           <label className="field-label" htmlFor="employee-password">{t.password}</label>

@@ -4,7 +4,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCafeData } from '@/lib/cafe-data';
-import { getActiveEmployeeProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signInEmployee, signOutOwner, db } from '@/lib/firebase';
+import { getActiveEmployeeProfile, getActiveAdminProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signInEmployee, signOutOwner, db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import {
@@ -56,7 +56,7 @@ function combineOrderItems(items: AnyRecord[] = []): AnyRecord[] {
 const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
-    dashboard: 'پوختەی ڕۆژ', orders: 'داواکارییەکان', archive: 'ئەرشیفی داواکاری', customers: 'کڕیارەکان', employees: 'کارمەندان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
+    dashboard: 'پوختەی ڕۆژ', orders: 'داواکارییەکان', archive: 'ئەرشیفی داواکاری', customers: 'کڕیارەکان', employees: 'کارمەندان', admins: 'بەڕێوەبەرەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
@@ -100,7 +100,7 @@ const copy = {
   },
   ar: {
     brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
-    dashboard: 'ملخص اليوم', orders: 'الطلبات', archive: 'أرشيف الطلبات', customers: 'الزبائن', employees: 'الموظفون', expenses: 'المصروفات', reports: 'التقارير', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
+    dashboard: 'ملخص اليوم', orders: 'الطلبات', archive: 'أرشيف الطلبات', customers: 'الزبائن', employees: 'الموظفون', admins: 'المديرون', expenses: 'المصروفات', reports: 'التقارير', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
@@ -150,6 +150,7 @@ const navItems = [
   { path: '/menu', key: 'products', icon: Coffee },
   { path: '/service', key: 'service', icon: Coffee },
   { path: '/employees', key: 'employees', icon: Users },
+  { path: '/admins', key: 'admins', icon: BriefcaseBusiness },
 ] as const;
 
 function formatIQD(value: number | undefined, locale: Locale) {
@@ -201,6 +202,7 @@ function App() {
   const [locale, setLocale] = useState<Locale>('ku');
   const [user, setUser] = useState<User | null>(null);
   const [employeeProfile, setEmployeeProfile] = useState<AnyRecord | null>(null);
+  const [isOwnerUser, setIsOwnerUser] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [authError, setAuthError] = useState('');
 
@@ -214,20 +216,25 @@ function App() {
       if (!nextUser) {
         setUser(null);
         setEmployeeProfile(null);
+        setIsOwnerUser(false);
         setAuthReady(true);
         return;
       }
       if (nextUser.uid === ownerUid) {
         setUser(nextUser);
         setEmployeeProfile(null);
+        setIsOwnerUser(true);
         setAuthReady(true);
         return;
       }
       try {
+        const adminProfile = await getActiveAdminProfile(nextUser);
+        if (adminProfile) { setUser(nextUser); setEmployeeProfile(null); setIsOwnerUser(false); setAuthReady(true); return; }
         const profile = await getActiveEmployeeProfile(nextUser);
         if (profile) {
           setUser(nextUser);
           setEmployeeProfile(profile);
+          setIsOwnerUser(false);
           setAuthReady(true);
         } else {
           await signOutOwner();
@@ -274,7 +281,7 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <RoutedBoundary>
-            <AuthenticatedApp locale={locale} setLocale={setLocale} onSignOut={handleSignOut} t={t} />
+            <AuthenticatedApp locale={locale} setLocale={setLocale} onSignOut={handleSignOut} t={t} isOwner={isOwnerUser} />
           </RoutedBoundary>
         </WouterRouter>
         <Toaster />
@@ -530,7 +537,26 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
   </>;
 }
 
-function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => Promise<void>; t: any }) {
+
+function AdminsPage({ locale, actions, notify }: { locale: Locale; actions: AnyRecord; notify: (message: string) => void }) {
+  const [admins, setAdmins] = useState<AnyRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false); const isKu = locale === 'ku';
+  useEffect(() => {
+    if (!db || !ownerUid) { setLoading(false); return; }
+    return onSnapshot(collection(db, 'owners', ownerUid, 'admins'), (snapshot) => { setAdmins(snapshot.docs.map((item) => ({ id: item.id, ...item.data() }))); setLoading(false); }, () => { setLoading(false); notify(isKu ? 'نەتوانرا بەڕێوەبەرەکان بخوێندرێنەوە؛ یاساکانی Firebase بپشکنە.' : 'تعذرت قراءة المديرين؛ تحقق من قواعد Firebase.'); });
+  }, []);
+  async function add(event: FormEvent) { event.preventDefault(); setBusy(true); try { await actions.createAdmin({ name: name.trim(), phoneE164: phone.trim(), password }); setDialogOpen(false); setName(''); setPhone(''); setPassword(''); notify(isKu ? 'بەڕێوەبەر زیادکرا' : 'تمت إضافة المدير'); } catch (error) { notify(error instanceof Error ? error.message : (isKu ? 'هەڵە ڕوویدا' : 'حدث خطأ')); } finally { setBusy(false); } }
+  return <>
+    <div className="list-toolbar"><div className="employee-page-hint">{isKu ? 'تەنها خاوەن دەتوانێت بەڕێوەبەر زیاد بکات و دەسەڵاتیان بەڕێوە ببات.' : 'المالك فقط يستطيع إضافة المديرين وإدارة صلاحياتهم.'}</div><button className="button button-primary" type="button" onClick={() => setDialogOpen(true)}><Plus size={16} />{isKu ? 'زیادکردنی بەڕێوەبەر' : 'إضافة مدير'}</button></div>
+    {loading ? <LoadingContent locale={locale} /> : admins.length === 0 ? <EmptyState locale={locale} title={isKu ? 'هێشتا بەڕێوەبەرێک نییە' : 'لا يوجد مديرون بعد'} /> : <div className="employee-admin-list">{admins.map((admin) => <article className="panel employee-admin-card" key={admin.id}><div><b>{admin.name}</b><small dir="ltr">{admin.phoneE164}</small></div><span className={`status-badge ${admin.active === false ? 'badge-cancelled' : 'badge-paid'}`}>{admin.active === false ? (isKu ? 'ناچالاک' : 'غير نشط') : (isKu ? 'چالاک' : 'نشط')}</span><div className="row-actions"><button className="button button-secondary small-button" type="button" onClick={() => void actions.updateAdmin(admin.phoneE164, admin.active === false).then(() => notify(isKu ? 'نوێکرایەوە' : 'تم التحديث')).catch(() => notify(isKu ? 'هەڵە ڕوویدا' : 'حدث خطأ'))}>{admin.active === false ? (isKu ? 'چالاککردن' : 'تفعيل') : (isKu ? 'ناچالاککردن' : 'إيقاف')}</button><button className="button button-secondary small-button" type="button" onClick={() => { if (window.confirm(isKu ? 'دڵنیایت لە سڕینەوەی ئەم بەڕێوەبەرە؟' : 'هل تريد حذف هذا المدير؟')) void actions.deleteAdmin(admin.phoneE164).then(() => notify(isKu ? 'سڕایەوە' : 'تم الحذف')).catch(() => notify(isKu ? 'هەڵە ڕوویدا' : 'حدث خطأ')); }}>{isKu ? 'سڕینەوە' : 'حذف'}</button></div></article>)}</div>}
+    {dialogOpen && <Modal title={isKu ? 'زیادکردنی بەڕێوەبەر' : 'إضافة مدير'} onClose={() => setDialogOpen(false)}><form className="dialog-form" onSubmit={add}><label className="form-field"><span>{isKu ? 'ناو' : 'الاسم'}</span><input required value={name} onChange={(e) => setName(e.target.value)} /></label><label className="form-field"><span>{isKu ? 'ژمارەی مۆبایل (+964...)' : 'رقم الهاتف (+964...)'}</span><input required type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" placeholder="+9647XXXXXXXXX" /></label><label className="form-field"><span>{isKu ? 'وشەی نهێنی (لانیکەم ٦ پیت)' : 'كلمة المرور (6 أحرف على الأقل)'}</span><input required minLength={6} type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" /></label><div className="dialog-actions"><button className="button button-quiet" type="button" onClick={() => setDialogOpen(false)}>{isKu ? 'پاشگەزبوونەوە' : 'إلغاء'}</button><button className="button button-primary" disabled={busy || !name.trim() || !phone.trim() || password.length < 6} type="submit">{busy ? <LoaderCircle className="spin" size={15} /> : null}{isKu ? 'پاشەکەوت' : 'حفظ'}</button></div></form></Modal>}
+  </>;
+}
+
+function AuthenticatedApp({ locale, setLocale, onSignOut, t, isOwner }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => Promise<void>; t: any; isOwner: boolean }) {
   const dataState = useCafeData();
   const { data, loading, error } = dataState;
   const [path, setPath] = useLocation();
@@ -561,7 +587,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
       setSigningOut(false);
     }
   }
-  const pageTitle = titleFor(path, t);
+  const pageTitle = path === '/admins' ? (locale === 'ku' ? 'بەڕێوەبەرەکان' : 'المديرون') : titleFor(path, t);
   const content = () => {
     if (loading) return <LoadingContent locale={locale} />;
     if (path === '/menu' || path === '/products') return <><DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} /></>;
@@ -570,6 +596,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (path === '/archive') return <ArchivePage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/service') return <ServicePage data={snap} locale={locale} t={t} />;
+    if (path === '/admins' && isOwner) return <AdminsPage locale={locale} actions={dataState} notify={notify} />;
     if (path === '/employees') return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/expenses') return <DataPage kind="expenses" records={snap.expenses} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/settings') return <SettingsPage settings={snap.settings} locale={locale} onLocale={setLocale} actions={dataState} notify={notify} t={t} />;
@@ -582,7 +609,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
         <div className="sidebar-restaurant"><span className="restaurant-avatar">Q</span><div><b>{localized(snap.settings, locale, 'restaurantName') || 'QUBA'}</b><small>{t.owner}</small></div><ChevronDown size={15} /></div>
         <p className="nav-caption">{locale === 'ku' ? 'بەڕێوەبردن' : 'الإدارة'}</p>
         <nav className="main-nav">
-          {navItems.map(({ path: itemPath, key, icon: Icon }) => <Link key={itemPath} href={itemPath} className={`nav-link ${path === itemPath ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
+          {navItems.filter((item) => item.path !== '/admins' || isOwner).map(({ path: itemPath, key, icon: Icon }) => <Link key={itemPath} href={itemPath} className={`nav-link ${path === itemPath ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
             <Icon size={18} strokeWidth={1.8} /><span>{t[key]}</span>
           </Link>)}
         </nav>

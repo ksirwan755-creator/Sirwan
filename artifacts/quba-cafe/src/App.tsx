@@ -11,7 +11,7 @@ import {
   Activity, Archive, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
   ChevronDown, CircleAlert, ClipboardList, Coffee, CreditCard, FileBarChart2,
   Globe2, LayoutDashboard, LoaderCircle, LogOut, Menu, Moon, Sun, Pencil, Plus, Search, Settings2,
-  Trash2, Users, Utensils, Wallet, X,
+  Trash2, Users, Utensils, Wallet, X, ShieldCheck,
 } from 'lucide-react';
 import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
@@ -57,7 +57,7 @@ const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
     dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
-    orders: 'داواکارییەکان', archive: 'ئەرشیف', archiveRemove: 'لابردن لە ئەرشیف', archiveConfirm: 'دڵنیایت دەتەوێت ئەم تۆمارە لە ئەرشیف لاببەیت؟ مێژووی فرۆشتن و ڕاپۆرتەکان دەمێننەوە.', quickOrder: 'داواکاری خێرا', customers: 'کڕیارەکان', employees: 'کارمەندان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
+    orders: 'داواکارییەکان', archive: 'ئەرشیف', archiveRemove: 'لابردن لە ئەرشیف', archiveConfirm: 'دڵنیایت دەتەوێت ئەم تۆمارە لە ئەرشیف لاببەیت؟ مێژووی فرۆشتن و ڕاپۆرتەکان دەمێننەوە.', quickOrder: 'داواکاری خێرا', customers: 'کڕیارەکان', employees: 'کارمەندان', admins: 'ئەدمینەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
@@ -102,7 +102,7 @@ const copy = {
   ar: {
     brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
     dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
-    orders: 'الطلبات', archive: 'الأرشيف', archiveRemove: 'إزالة من الأرشيف', archiveConfirm: 'هل تريد إزالة هذا السجل من الأرشيف؟ ستبقى بيانات المبيعات والتقارير محفوظة.', quickOrder: 'طلب سريع', customers: 'الزبائن', employees: 'الموظفون', expenses: 'المصروفات', reports: 'التقارير',
+    orders: 'الطلبات', archive: 'الأرشيف', archiveRemove: 'إزالة من الأرشيف', archiveConfirm: 'هل تريد إزالة هذا السجل من الأرشيف؟ ستبقى بيانات المبيعات والتقارير محفوظة.', quickOrder: 'طلب سريع', customers: 'الزبائن', employees: 'الموظفون', admins: 'المشرفون', expenses: 'المصروفات', reports: 'التقارير',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
@@ -157,6 +157,7 @@ const navItems = [
   { path: '/service', key: 'service', icon: Coffee },
   { path: '/customers', key: 'customers', icon: Users },
   { path: '/employees', key: 'employees', icon: Users },
+  { path: '/admins', key: 'admins', icon: ShieldCheck },
   { path: '/expenses', key: 'expenses', icon: Wallet },
   { path: '/reports', key: 'reports', icon: FileBarChart2 },
   { path: '/settings', key: 'settings', icon: Settings2 },
@@ -540,6 +541,31 @@ function EmployeesPage({ employees, tables, locale, t, actions, notify }: { empl
   </>;
 }
 
+
+function AdminsPage({ employees, locale }: { employees: AnyRecord[]; locale: Locale }) {
+  const admins = employees.filter((employee) => employee.role === 'admin' || employee.role === 'super_admin');
+  return <section className="data-section">
+    <div className="section-heading">
+      <div>
+        <h2>{locale === 'ku' ? 'بەڕێوەبەرانی قوبە' : 'مشرفو قوبا'}</h2>
+        <p className="muted">{locale === 'ku' ? 'لیستی ئەو کارمەندانەی پلەی ئەدمینیان هەیە' : 'قائمة الموظفين الذين لديهم صلاحية الإدارة'}</p>
+      </div>
+      <span className="count-pill">{admins.length}</span>
+    </div>
+    {admins.length === 0 ? <div className="empty-state">
+      <ShieldCheck size={30} />
+      <h3>{locale === 'ku' ? 'هێشتا هیچ ئەدمینێک تۆمار نەکراوە' : 'لا يوجد مشرفون بعد'}</h3>
+      <p>{locale === 'ku' ? 'لە ئێستادا ئەم بەشە بۆ پیشاندانی ئەدمینەکان ئامادەیە.' : 'هذا القسم جاهز لعرض المشرفين.'}</p>
+    </div> : <div className="record-grid">
+      {admins.map((employee) => <article className="record-card" key={employee.id || employee.phoneE164}>
+        <div className="record-card-head"><ShieldCheck size={19} /><b>{employee.name}</b></div>
+        <p>{employee.phoneE164 || employee.phone || ''}</p>
+        <span className={employee.active === false ? 'status-inactive' : 'status-active'}>{employee.active === false ? (locale === 'ku' ? 'ناچالاک' : 'غير نشط') : (locale === 'ku' ? 'چالاک' : 'نشط')}</span>
+      </article>)}
+    </div>}
+  </section>;
+}
+
 function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale; setLocale: (locale: Locale) => void; onSignOut: () => Promise<void>; t: any }) {
   const dataState = useCafeData();
   const { data, loading, error } = dataState;
@@ -585,6 +611,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (path === '/service') return <ServicePage data={snap} locale={locale} t={t} />;
     if (path === '/customers') return <DataPage kind="customers" records={snap.customers} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/employees') return <EmployeesPage employees={snap.employees || []} tables={snap.tables} locale={locale} t={t} actions={dataState} notify={notify} />;
+    if (path === '/admins') return <AdminsPage employees={snap.employees || []} locale={locale} />;
     if (path === '/expenses') return <DataPage kind="expenses" records={snap.expenses} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/reports') return <Reports data={snap} locale={locale} t={t} />;
     if (path === '/settings') return <SettingsPage settings={snap.settings} locale={locale} onLocale={setLocale} actions={dataState} notify={notify} t={t} />;

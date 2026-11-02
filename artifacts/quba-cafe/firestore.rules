@@ -74,7 +74,8 @@ service cloud.firestore {
     }
 
     match /owners/{ownerUid}/settings/{recordId} {
-      allow read, write: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow read: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow write: if isOwner(ownerUid);
     }
 
     match /{document=**} {

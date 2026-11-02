@@ -150,7 +150,6 @@ const navItems = [
   { path: '/', key: 'tables', icon: Utensils },
   { path: '/orders', key: 'orders', icon: ClipboardList },
   { path: '/archive', key: 'archive', icon: Archive },
-  { path: '/pos', key: 'quickOrder', icon: Plus },
   { path: '/menu', key: 'products', icon: Coffee },
   { path: '/categories', key: 'categories', icon: Boxes },
 

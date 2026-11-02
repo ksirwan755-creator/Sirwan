@@ -147,12 +147,12 @@ const copy = {
 } as const;
 
 const navItems = [
-  { path: '/', key: 'dashboard', icon: LayoutDashboard },
+  { path: '/', key: 'tables', icon: Utensils },
   { path: '/orders', key: 'orders', icon: ClipboardList },
   { path: '/pos', key: 'quickOrder', icon: Plus },
   { path: '/menu', key: 'products', icon: Coffee },
   { path: '/categories', key: 'categories', icon: Boxes },
-  { path: '/tables', key: 'tables', icon: Utensils },
+
   { path: '/service', key: 'service', icon: Coffee },
   { path: '/customers', key: 'customers', icon: Users },
   { path: '/employees', key: 'employees', icon: Users },
@@ -570,7 +570,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (loading) return <LoadingContent locale={locale} />;
     if (path === '/menu' || path === '/products') return <><DataPage kind="products" records={snap.products} categories={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} /></>;
     if (error) return <ErrorContent locale={locale} message={error} onRetry={() => window.location.reload()} />;
-    if (path === '/') return <Dashboard data={snap} locale={locale} t={t} />;
+    if (path === '/') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/pos') return <QuickOrderPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
@@ -845,6 +845,12 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [preparing, setPreparing] = useState(true);
   const [tableFilter, setTableFilter] = useState<'all' | 'busy' | 'free'>('all');
   const [tableSearch, setTableSearch] = useState('');
+  const [menuDialog, setMenuDialog] = useState(false);
+  const [menuNameKu, setMenuNameKu] = useState('');
+  const [menuNameAr, setMenuNameAr] = useState('');
+  const [menuPrice, setMenuPrice] = useState('');
+  const [menuKind, setMenuKind] = useState<'food' | 'beverage'>('food');
+  const [, setPath] = useLocation();
   useEffect(() => {
     let active = true;
     actions.ensureDefaultTables().catch(() => { if (active) notify(t.serverError); }).finally(() => { if (active) setPreparing(false); });
@@ -867,6 +873,25 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     try {
       await actions.addPayment(paymentOrder.id, { amountIqd: amount, method });
       setPaymentOrder(null);
+      notify(t.saved);
+    } catch (error) { notify(recordActionError(error, t)); }
+    finally { setBusy(false); }
+  }
+  async function saveQuickMenuItem(event: FormEvent) {
+    event.preventDefault();
+    const price = Number(menuPrice);
+    if (!menuNameKu.trim() || !Number.isSafeInteger(price) || price < 0) return;
+    setBusy(true);
+    try {
+      await actions.createRecord('products', {
+        nameKu: menuNameKu.trim(),
+        nameAr: menuNameAr.trim(),
+        categoryId: menuKind === 'beverage' ? '__quba_beverage__' : '__quba_food__',
+        priceIqd: price,
+        active: true,
+      });
+      setMenuDialog(false);
+      setMenuNameKu(''); setMenuNameAr(''); setMenuPrice(''); setMenuKind('food');
       notify(t.saved);
     } catch (error) { notify(recordActionError(error, t)); }
     finally { setBusy(false); }
@@ -941,18 +966,21 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     const matchesSearch = String(item.table.label || '').toLocaleLowerCase().includes(tableSearch.trim().toLocaleLowerCase());
     return matchesFilter && matchesSearch;
   });
-  const renderTableButton = (item: AnyRecord) => <button type="button" className={`table-tile quba-simple-table ${item.isActive ? 'table-tile-busy' : ''}`} key={item.table.id} onClick={() => setSelectedTableId(item.table.id)} data-testid={`button-table-${String(item.table.label).replace(/\D/g, '')}`}>
-    <strong className="table-tile-number">{item.table.label}</strong>
-    <span className={`quba-table-state ${item.isActive ? 'is-active' : 'is-inactive'}`}>{item.isActive ? (locale === 'ku' ? 'بەکارهاتوو' : 'مشغولة') : (locale === 'ku' ? 'بەتاڵ' : 'متاحة')}</span>
-    {item.isActive ? <><b className="table-tile-balance">{formatIQD(item.due, locale)}</b><small>{t.tableBalance}</small></> : <small>{locale === 'ku' ? 'ئامادەی وەرگرتنی میوان' : 'جاهزة لاستقبال الزبائن'}</small>}
-    <span className="table-tile-action">{item.isActive ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
-  </button>;
+  const renderTableButton = (item: AnyRecord) => <article className={`quba-table-card ${item.isActive ? 'table-tile-busy' : ''}`} key={item.table.id}>
+    <button type="button" className="quba-table-open" onClick={() => setSelectedTableId(item.table.id)} data-testid={`button-table-${String(item.table.label).replace(/\D/g, '')}`}>
+      <strong className="table-tile-number">{item.table.label}</strong>
+      <span className={`quba-table-state ${item.isActive ? 'is-active' : 'is-inactive'}`}>{item.isActive ? (locale === 'ku' ? 'بەکارهاتوو' : 'مشغولة') : (locale === 'ku' ? 'بەتاڵ' : 'متاحة')}</span>
+      {item.isActive ? <><b className="table-tile-balance">{formatIQD(item.due, locale)}</b><small>{t.tableBalance}</small></> : <small>{locale === 'ku' ? 'ئامادەی وەرگرتنی میوان' : 'جاهزة لاستقبال الزبائن'}</small>}
+      <span className="table-tile-action">{item.isActive ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
+    </button>
+    {item.isActive && item.due > 0 && <button type="button" className="quba-table-pay" onClick={() => setPaymentOrder(item.order)} disabled={busy}><Banknote size={15} />{locale === 'ku' ? 'وەرگرتنی پارە' : 'استلام دفعة'}</button>}
+  </article>;
   if (preparing && tableCards.length === 0) return <div className="tables-loading">{t.tableAutoCreate}</div>;
   return <section className="quba-tables-only">
     <div className="quba-tables-section">
       <header className="quba-tables-heading">
-        <div><h2>{locale === 'ku' ? 'هەموو مێزەکان' : 'كل الطاولات'}</h2><p>{locale === 'ku' ? 'مێزێک هەڵبژێرە؛ هەموو داواکارییەکانی ئەو مێزە دەبینیت.' : 'اختر طاولة لعرض جميع طلباتها.'}</p></div>
-        <span>{tableCards.length}</span>
+        <div><h2>{locale === 'ku' ? 'مێزەکانی قوبا' : 'طاولات قوبا'}</h2><p>{locale === 'ku' ? 'مێزە بەکارهاتوو و بەتاڵەکان لە یەک شاشەدا.' : 'الطاولات المشغولة والمتاحة في شاشة واحدة.'}</p></div>
+        <div className="quba-main-actions"><span>{tableCards.length} {locale === 'ku' ? 'مێز' : 'طاولة'}</span><button type="button" className="button button-primary" onClick={() => setMenuDialog(true)}><Plus size={16} />{locale === 'ku' ? 'زیادکردنی بەرهەم بۆ مێنیو' : 'إضافة صنف للقائمة'}</button></div>
       </header>
       <div className="quba-table-toolbar">
         <label className="quba-table-search"><Search size={17} /><input value={tableSearch} onChange={(event) => setTableSearch(event.target.value)} placeholder={locale === 'ku' ? 'گەڕان بە ژمارەی مێز...' : 'ابحث برقم الطاولة...'} /></label>
@@ -964,6 +992,14 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
       </div>
       {visibleTableCards.length ? <div className="tables-grid quba-tables-grid">{visibleTableCards.map(renderTableButton)}</div> : <p className="quba-empty-tables">{locale === 'ku' ? 'هیچ مێزێک نەدۆزرایەوە.' : 'لا توجد طاولات مطابقة.'}</p>}
     </div>
+    {paymentOrder && <PaymentDialog order={paymentOrder} locale={locale} t={t} busy={busy} onClose={() => setPaymentOrder(null)} onPay={payTableOrder} />}
+    {menuDialog && <Modal title={locale === 'ku' ? 'زیادکردنی بەرهەم بۆ مێنیو' : 'إضافة صنف إلى القائمة'} onClose={() => setMenuDialog(false)}><form className="dialog-form" onSubmit={saveQuickMenuItem}>
+      <label className="form-field"><span>{locale === 'ku' ? 'ناوی بەرهەم بە کوردی' : 'اسم الصنف بالكردية'}</span><input required value={menuNameKu} onChange={(e) => setMenuNameKu(e.target.value)} /></label>
+      <label className="form-field"><span>{locale === 'ku' ? 'ناوی بەرهەم بە عەرەبی (ئارەزوومەندانە)' : 'اسم الصنف بالعربية (اختياري)'}</span><input value={menuNameAr} onChange={(e) => setMenuNameAr(e.target.value)} /></label>
+      <label className="form-field"><span>{t.category}</span><select value={menuKind} onChange={(e) => setMenuKind(e.target.value as 'food' | 'beverage')}><option value="food">{t.foodService}</option><option value="beverage">{t.beverageService}</option></select></label>
+      <label className="form-field"><span>{t.price}</span><input required type="number" min="0" step="1" value={menuPrice} onChange={(e) => setMenuPrice(e.target.value)} /></label>
+      <div className="dialog-actions"><button className="button button-quiet" type="button" onClick={() => setMenuDialog(false)}>{t.cancel}</button><button className="button button-primary" type="submit" disabled={busy || !menuNameKu.trim() || menuPrice === ''}>{busy ? <LoaderCircle className="spin" size={15} /> : <Plus size={15} />}{t.save}</button></div>
+    </form></Modal>}
   </section>;
 }
 function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: any }) {

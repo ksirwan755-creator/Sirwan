@@ -10,14 +10,6 @@ service cloud.firestore {
       return /databases/$(database)/documents/owners/$(ownerUid)/employeeAccess/$(request.auth.uid);
     }
 
-    function isSuperAdmin(ownerUid) {
-      return request.auth != null
-        && exists(employeeAccessPath(ownerUid))
-        && get(employeeAccessPath(ownerUid)).data.active == true
-        && get(employeeAccessPath(ownerUid)).data.authUid == request.auth.uid
-        && get(employeeAccessPath(ownerUid)).data.role == 'super_admin';
-    }
-
     function isActiveEmployee(ownerUid) {
       return request.auth != null
         && exists(employeeAccessPath(ownerUid))
@@ -47,35 +39,34 @@ service cloud.firestore {
     }
 
     match /owners/{ownerUid}/orders/{recordId} {
-      allow read: if isOwner(ownerUid) || isSuperAdmin(ownerUid)
+      allow read: if isOwner(ownerUid)
         || (employeeCanReadTable(ownerUid, resource.data.tableId)
           && resource.data.status in ['new', 'preparing', 'ready', 'delivered']);
-      allow create, update, delete: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow create, update, delete: if isOwner(ownerUid);
     }
 
     match /owners/{ownerUid}/categories/{recordId} {
-      allow read, write: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow read, write: if isOwner(ownerUid);
     }
 
     match /owners/{ownerUid}/products/{recordId} {
-      allow read, write: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow read, write: if isOwner(ownerUid);
     }
 
     match /owners/{ownerUid}/tables/{recordId} {
-      allow read, write: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow read, write: if isOwner(ownerUid);
     }
 
     match /owners/{ownerUid}/expenses/{recordId} {
-      allow read, write: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow read, write: if isOwner(ownerUid);
     }
 
     match /owners/{ownerUid}/customers/{recordId} {
-      allow read, write: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow read, write: if isOwner(ownerUid);
     }
 
     match /owners/{ownerUid}/settings/{recordId} {
-      allow read: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
-      allow write: if isOwner(ownerUid);
+      allow read, write: if isOwner(ownerUid);
     }
 
     match /{document=**} {

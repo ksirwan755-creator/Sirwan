@@ -267,15 +267,26 @@ export async function ensureDefaultTables(): Promise<void> {
   assertOwner();
   const snapshot = await getDocs(ownerCollection('tables'));
   const existingNumbers = new Set<number>();
-  snapshot.docs.forEach((item) => {
-    const label = String(item.data().label ?? '');
-    const match = label.match(/\d+/);
-    if (match) {
-      const number = Number(match[0]);
-      if (number >= 1 && number <= 40) existingNumbers.add(number);
-    }
-  });
   const now = new Date().toISOString();
+  for (const item of snapshot.docs) {
+    const tableData = item.data();
+    const label = String(tableData.label ?? '');
+    const match = label.match(/\d+/);
+    if (!match) continue;
+    const number = Number(match[0]);
+    if (number < 1 || number > 40) continue;
+    existingNumbers.add(number);
+
+    // QUBA always has 40 usable tables. A table accidentally marked inactive
+    // must not disappear from the main table grid.
+    if (tableData.active === false || tableData.status === 'closed') {
+      await updateDoc(item.ref, {
+        active: true,
+        status: 'available',
+        updatedAt: now,
+      });
+    }
+  }
   for (let number = 1; number <= 40; number += 1) {
     if (existingNumbers.has(number)) continue;
     const tableRef = doc(ownerCollection('tables'), `quba-table-${String(number).padStart(2, '0')}`);

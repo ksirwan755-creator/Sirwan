@@ -843,6 +843,8 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [busy, setBusy] = useState(false);
   const [paymentOrder, setPaymentOrder] = useState<AnyRecord | null>(null);
   const [preparing, setPreparing] = useState(true);
+  const [tableFilter, setTableFilter] = useState<'all' | 'busy' | 'free'>('all');
+  const [tableSearch, setTableSearch] = useState('');
   useEffect(() => {
     let active = true;
     actions.ensureDefaultTables().catch(() => { if (active) notify(t.serverError); }).finally(() => { if (active) setPreparing(false); });
@@ -933,22 +935,34 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     return { table, order, due: order ? Math.max(0, Number(order.totalIqd || 0) - paid) : 0, isActive: openOrders.length > 0 };
   });
   const activeTableCards = tableCards.filter((item: AnyRecord) => item.isActive);
-  const inactiveTableCards = tableCards.filter((item: AnyRecord) => !item.isActive);
+  const freeTableCards = tableCards.filter((item: AnyRecord) => !item.isActive);
+  const visibleTableCards = tableCards.filter((item: AnyRecord) => {
+    const matchesFilter = tableFilter === 'all' || (tableFilter === 'busy' ? item.isActive : !item.isActive);
+    const matchesSearch = String(item.table.label || '').toLocaleLowerCase().includes(tableSearch.trim().toLocaleLowerCase());
+    return matchesFilter && matchesSearch;
+  });
   const renderTableButton = (item: AnyRecord) => <button type="button" className={`table-tile quba-simple-table ${item.isActive ? 'table-tile-busy' : ''}`} key={item.table.id} onClick={() => setSelectedTableId(item.table.id)} data-testid={`button-table-${String(item.table.label).replace(/\D/g, '')}`}>
     <strong className="table-tile-number">{item.table.label}</strong>
-    <span className={`quba-table-state ${item.isActive ? 'is-active' : 'is-inactive'}`}>{item.isActive ? (locale === 'ku' ? 'چالاک' : 'نشطة') : (locale === 'ku' ? 'ناچالاک' : 'غير نشطة')}</span>
-    {item.isActive ? <><b className="table-tile-balance">{formatIQD(item.due, locale)}</b><small>{t.tableBalance}</small></> : <small>{t.tableNoOrder}</small>}
+    <span className={`quba-table-state ${item.isActive ? 'is-active' : 'is-inactive'}`}>{item.isActive ? (locale === 'ku' ? 'بەکارهاتوو' : 'مشغولة') : (locale === 'ku' ? 'بەتاڵ' : 'متاحة')}</span>
+    {item.isActive ? <><b className="table-tile-balance">{formatIQD(item.due, locale)}</b><small>{t.tableBalance}</small></> : <small>{locale === 'ku' ? 'ئامادەی وەرگرتنی میوان' : 'جاهزة لاستقبال الزبائن'}</small>}
     <span className="table-tile-action">{item.isActive ? t.tableCurrentOrder : t.newOrder}<Plus size={14} /></span>
   </button>;
   if (preparing && tableCards.length === 0) return <div className="tables-loading">{t.tableAutoCreate}</div>;
   return <section className="quba-tables-only">
     <div className="quba-tables-section">
-      <header className="quba-tables-heading"><h2>{locale === 'ku' ? 'مێزە چالاکەکان' : 'الطاولات النشطة'}</h2><span>{activeTableCards.length}</span></header>
-      {activeTableCards.length ? <div className="tables-grid quba-tables-grid">{activeTableCards.map(renderTableButton)}</div> : <p className="quba-empty-tables">{locale === 'ku' ? 'هیچ مێزێکی چالاک نییە' : 'لا توجد طاولات نشطة'}</p>}
-    </div>
-    <div className="quba-tables-section">
-      <header className="quba-tables-heading"><h2>{locale === 'ku' ? 'مێزە ناچالاکەکان' : 'الطاولات غير النشطة'}</h2><span>{inactiveTableCards.length}</span></header>
-      {inactiveTableCards.length ? <div className="tables-grid quba-tables-grid">{inactiveTableCards.map(renderTableButton)}</div> : <p className="quba-empty-tables">{locale === 'ku' ? 'هەموو مێزەکان چالاکن' : 'كل الطاولات نشطة'}</p>}
+      <header className="quba-tables-heading">
+        <div><h2>{locale === 'ku' ? 'هەموو مێزەکان' : 'كل الطاولات'}</h2><p>{locale === 'ku' ? 'مێزێک هەڵبژێرە؛ هەموو داواکارییەکانی ئەو مێزە دەبینیت.' : 'اختر طاولة لعرض جميع طلباتها.'}</p></div>
+        <span>{tableCards.length}</span>
+      </header>
+      <div className="quba-table-toolbar">
+        <label className="quba-table-search"><Search size={17} /><input value={tableSearch} onChange={(event) => setTableSearch(event.target.value)} placeholder={locale === 'ku' ? 'گەڕان بە ژمارەی مێز...' : 'ابحث برقم الطاولة...'} /></label>
+        <div className="quba-table-filters">
+          <button type="button" className={tableFilter === 'all' ? 'is-selected' : ''} onClick={() => setTableFilter('all')}>{locale === 'ku' ? 'هەموو' : 'الكل'} <b>{tableCards.length}</b></button>
+          <button type="button" className={tableFilter === 'busy' ? 'is-selected' : ''} onClick={() => setTableFilter('busy')}>{locale === 'ku' ? 'بەکارهاتوو' : 'مشغولة'} <b>{activeTableCards.length}</b></button>
+          <button type="button" className={tableFilter === 'free' ? 'is-selected' : ''} onClick={() => setTableFilter('free')}>{locale === 'ku' ? 'بەتاڵ' : 'متاحة'} <b>{freeTableCards.length}</b></button>
+        </div>
+      </div>
+      {visibleTableCards.length ? <div className="tables-grid quba-tables-grid">{visibleTableCards.map(renderTableButton)}</div> : <p className="quba-empty-tables">{locale === 'ku' ? 'هیچ مێزێک نەدۆزرایەوە.' : 'لا توجد طاولات مطابقة.'}</p>}
     </div>
   </section>;
 }

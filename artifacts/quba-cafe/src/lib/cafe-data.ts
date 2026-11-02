@@ -13,6 +13,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
   type DocumentData,
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured, ownerUid, createEmployeeAuthAccount } from './firebase';
@@ -227,8 +228,10 @@ export async function setEmployeeRole(phoneE164: string, role: 'employee' | 'sup
   const uid = String(snapshot.data().authUid || '');
   if (!uid) throw new Error('Employee login account is missing.');
   const updatedAt = new Date().toISOString();
-  await updateDoc(employeeRef, { role, updatedAt });
-  await updateDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid), { role, updatedAt });
+  const batch = writeBatch(db);
+  batch.update(employeeRef, { role, updatedAt });
+  batch.update(doc(db, 'owners', ownerUid, 'employeeAccess', uid), { role, updatedAt });
+  await batch.commit();
 }
 
 export async function deactivateEmployee(phoneE164: string): Promise<void> {

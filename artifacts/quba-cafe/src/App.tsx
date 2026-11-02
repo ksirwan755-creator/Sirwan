@@ -841,6 +841,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [paymentOrder, setPaymentOrder] = useState<AnyRecord | null>(null);
   const [preparing, setPreparing] = useState(true);
   useEffect(() => {
     let active = true;
@@ -858,6 +859,16 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const historyTotal = tableOrders.reduce((sum: number, order: AnyRecord) => sum + Number(order.totalIqd || 0), 0);
   const historyPaid = tableOrders.reduce((sum: number, order: AnyRecord) => sum + (order.payments || []).reduce((paid: number, payment: AnyRecord) => paid + Number(payment.amountIqd || 0), 0), 0);
   const historyRemaining = Math.max(0, historyTotal - historyPaid);
+  async function payTableOrder(amount: number, method: string) {
+    if (!paymentOrder || busy) return;
+    setBusy(true);
+    try {
+      await actions.addPayment(paymentOrder.id, { amountIqd: amount, method });
+      setPaymentOrder(null);
+      notify(t.saved);
+    } catch (error) { notify(recordActionError(error, t)); }
+    finally { setBusy(false); }
+  }
   async function closeSelectedTable() {
     if (!selectedTable || busy) return;
     const allActiveOrdersPaid = activeOrders.every((order: AnyRecord) => {
@@ -907,10 +918,11 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
         return <article className="table-history-card" key={order.id}>
           <div className="table-history-head"><div><b>{t.tableCurrentOrder}</b><small>{dateText(order.createdAt, locale)}</small></div><span className={normalizeOrderStatus(order.status) === 'paid' ? 'status-badge badge-paid' : 'status-badge badge-open'}>{orderStatusLabel(order.status, locale, t)}</span></div>
           {combineOrderItems(order.items || []).map((item: AnyRecord, index: number) => <div className="table-history-line" key={item.productId + '-' + index}><span>{localized(item, locale) || item.nameKu || item.nameAr} <small>× {item.quantity}</small></span><b>{formatIQD(Number(item.unitPriceIqd || 0) * Number(item.quantity || 0), locale)}</b></div>)}
-          <div className="table-history-total"><span>{t.tableTotal}</span><b>{formatIQD(order.totalIqd, locale)}</b></div><small className="table-history-paid">{t.paidAmount}: {formatIQD(paid, locale)}</small>
+          <div className="table-history-total"><span>{t.tableTotal}</span><b>{formatIQD(order.totalIqd, locale)}</b></div><small className="table-history-paid">{t.paidAmount}: {formatIQD(paid, locale)}</small>{normalizeOrderStatus(order.status) !== 'paid' && paid < Number(order.totalIqd || 0) && <button type="button" className="button button-secondary small-button" disabled={busy} onClick={() => setPaymentOrder(order)}>{t.addPayment}</button>}
         </article>;
       })}</div>}
     <div className="table-detail-footer"><div><small>{t.currentBalance}</small><b>{formatIQD(remaining, locale)}</b></div><button className="button button-primary" type="button" onClick={() => setAdding(true)}><Plus size={16} />{t.tableAddItems}</button></div>
+    {paymentOrder && <PaymentDialog order={paymentOrder} locale={locale} t={t} busy={busy} onClose={() => setPaymentOrder(null)} onPay={payTableOrder} />}
     {adding && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} initialTableId={selectedTable.id} lockTable currentOrder={activeOrders[0] || null} onClose={() => setAdding(false)} onCreate={submitItems} />}
   </section>;
   const sortedTables = allTables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => Number(String(a.label || '').match(/\d+/)?.[0] || 999) - Number(String(b.label || '').match(/\d+/)?.[0] || 999));

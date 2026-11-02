@@ -28,6 +28,10 @@ service cloud.firestore {
       allow create, update, delete: if isOwner(ownerUid);
     }
 
+    match /owners/{ownerUid}/employees/{recordId} {
+      allow read, write: if isOwner(ownerUid);
+    }
+
     match /owners/{ownerUid}/employeeAccess/{employeeUid} {
       allow read: if isOwner(ownerUid)
         || (request.auth != null && request.auth.uid == employeeUid);

@@ -68,12 +68,9 @@ function ownerCollection(name: string) {
 }
 
 function assertOwner() {
-  if (!isFirebaseConfigured || !db || !ownerUid) {
-    throw new Error('Firebase is not configured for this app.');
-  }
-  if (!auth?.currentUser || auth.currentUser.uid !== ownerUid) {
-    throw new Error('Sign in with the cafe owner account to continue.');
-  }
+  if (!isFirebaseConfigured || !db || !ownerUid) throw new Error('Firebase is not configured for this app.');
+  if (!auth?.currentUser) throw new Error('Sign in to continue.');
+  // Firestore Security Rules decide whether this signed-in account is the owner or an active admin.
 }
 
 function assertWholeAmount(value: number, label: string, allowZero = false) {
@@ -231,6 +228,42 @@ export async function deleteEmployee(phoneE164: string): Promise<void> {
     await deleteDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid));
   }
   await deleteDoc(employeeRef);
+}
+
+
+export async function createAdmin(input: { name: string; phoneE164: string; password: string }): Promise<void> {
+  if (!db || !auth?.currentUser || auth.currentUser.uid !== ownerUid) throw new Error('Only the cafe owner can add admins.');
+  const phoneE164 = input.phoneE164.trim();
+  if (!/^\\+[1-9]\\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format.');
+  if (!input.name.trim()) throw new Error('Admin name is required.');
+  if (input.password.length < 6) throw new Error('Password must be at least 6 characters.');
+  const adminRef = doc(db, 'owners', ownerUid, 'admins', phoneE164);
+  if ((await getDoc(adminRef)).exists()) throw new Error('This admin already exists.');
+  const uid = await createEmployeeAuthAccount(phoneE164, input.password);
+  const now = new Date().toISOString();
+  const profile = { authUid: uid, phoneE164, name: input.name.trim(), active: true, createdAt: now, updatedAt: now };
+  await setDoc(adminRef, profile);
+  await setDoc(doc(db, 'owners', ownerUid, 'adminAccess', uid), profile);
+}
+export async function updateAdmin(phoneE164: string, active: boolean): Promise<void> {
+  if (!db || !auth?.currentUser || auth.currentUser.uid !== ownerUid) throw new Error('Only the cafe owner can manage admins.');
+  const ref = doc(db, 'owners', ownerUid, 'admins', phoneE164);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('Admin record not found.');
+  const uid = String(snap.data().authUid || '');
+  if (!uid) throw new Error('Admin login is missing.');
+  const updatedAt = new Date().toISOString();
+  await updateDoc(ref, { active, updatedAt });
+  await updateDoc(doc(db, 'owners', ownerUid, 'adminAccess', uid), { active, updatedAt });
+}
+export async function deleteAdmin(phoneE164: string): Promise<void> {
+  if (!db || !auth?.currentUser || auth.currentUser.uid !== ownerUid) throw new Error('Only the cafe owner can delete admins.');
+  const ref = doc(db, 'owners', ownerUid, 'admins', phoneE164);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+  const uid = String(snap.data().authUid || '');
+  if (uid) await deleteDoc(doc(db, 'owners', ownerUid, 'adminAccess', uid));
+  await deleteDoc(ref);
 }
 
 export async function upsertCustomer(input: { name?: string; phone?: string; notes?: string }): Promise<string | null> {
@@ -658,11 +691,18 @@ export function useCafeData() {
         return;
       }
       if (user.uid !== ownerUid) {
-        setLoading(false);
-        setError('This account is not authorized as the cafe owner.');
+        void getDoc(doc(db, 'owners', ownerUid, 'adminAccess', user.uid)).then((adminSnapshot) => {
+          if (!active) return;
+          if (!adminSnapshot.exists() || adminSnapshot.data().active !== true) {
+            setLoading(false); setError('This account is not authorized as an active cafe admin.'); return;
+          }
+          startBusinessListeners();
+        }).catch((adminError) => { if (active) { setLoading(false); setError(adminError.message); } });
         return;
       }
+      startBusinessListeners();
 
+      function startBusinessListeners() {
       setLoading(true);
       const next: CafeDataSnapshot = { ...emptySnapshot };
       const loaded = new Set<string>();
@@ -711,6 +751,7 @@ export function useCafeData() {
         },
       );
       recordUnsubs.push(settingsUnsubscribe);
+      }
     });
 
     return () => {
@@ -741,5 +782,8 @@ export function useCafeData() {
     deactivateEmployee,
     deleteEmployee,
     saveSettings,
+    createAdmin,
+    updateAdmin,
+    deleteAdmin,
   };
 }

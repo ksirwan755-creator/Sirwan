@@ -675,6 +675,7 @@ export function useCafeData() {
       return;
     }
 
+    const firestore = db;
     let active = true;
     const recordUnsubs: (() => void)[] = [];
     const stopRecords = () => {
@@ -691,7 +692,7 @@ export function useCafeData() {
         return;
       }
       if (user.uid !== ownerUid) {
-        void getDoc(doc(db, 'owners', ownerUid, 'adminAccess', user.uid)).then((adminSnapshot) => {
+        void getDoc(doc(firestore, 'owners', ownerUid, 'adminAccess', user.uid)).then((adminSnapshot) => {
           if (!active) return;
           if (!adminSnapshot.exists() || adminSnapshot.data().active !== true) {
             setLoading(false); setError('This account is not authorized as an active cafe admin.'); return;

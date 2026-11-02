@@ -519,21 +519,28 @@ export async function addTablePayment(tableId: string, input: { amountIqd: numbe
   const tableRef = doc(ownerCollection('tables'), tableId);
   const ordersQuery = query(ownerCollection('orders'), where('tableId', '==', tableId));
 
+  // Firestore Web transactions accept document references, not Query objects.
+  // Find candidate orders first, then re-read each document in the transaction.
+  const candidateOrders = await getDocs(ordersQuery);
+
   await runTransaction(db, async (transaction) => {
-    // Read every order and the table before making any writes.
-    const ordersSnapshot = await transaction.get(ordersQuery);
     const tableSnapshot = await transaction.get(tableRef);
+    const orderSnapshots = await Promise.all(
+      candidateOrders.docs.map((item) => transaction.get(item.ref)),
+    );
     if (!tableSnapshot.exists()) throw new Error('Table not found.');
-    const openOrders = ordersSnapshot.docs
-      .filter((item) => !['paid', 'cancelled'].includes(String(item.data().status)))
-      .map((item) => ({ ref: item.ref, data: item.data() }));
+
+    const openOrders = orderSnapshots
+      .filter((snapshot) => snapshot.exists())
+      .map((snapshot) => ({ ref: snapshot.ref, data: snapshot.data() }))
+      .filter((order) => !['paid', 'cancelled'].includes(String(order.data.status)));
     if (!openOrders.length) throw new Error('This table has no open orders.');
 
     const balances = openOrders.map((order) => {
       const payments = Array.isArray(order.data.payments) ? order.data.payments : [];
       const paid = payments.reduce((sum: number, payment: any) => sum + Number(payment.amountIqd || 0), 0);
       return { ...order, payments, due: Math.max(0, Number(order.data.totalIqd || 0) - paid) };
-    }).filter((order) => order.due > 0);
+    });
     const totalDue = balances.reduce((sum, order) => sum + order.due, 0);
     if (input.amountIqd !== totalDue) {
       throw new Error('Please collect the exact remaining balance for this table.');
@@ -542,7 +549,9 @@ export async function addTablePayment(tableId: string, input: { amountIqd: numbe
     const now = new Date().toISOString();
     for (const order of balances) {
       transaction.update(order.ref, {
-        payments: [...order.payments, { amountIqd: order.due, method: input.method, createdAt: now }],
+        payments: order.due > 0
+          ? [...order.payments, { amountIqd: order.due, method: input.method, createdAt: now }]
+          : order.payments,
         status: 'paid',
         paidAt: now,
         updatedAt: now,

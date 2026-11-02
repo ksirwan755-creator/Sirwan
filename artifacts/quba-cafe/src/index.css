@@ -1080,3 +1080,33 @@ input:focus,select:focus,textarea:focus {
   outline-color: rgba(112,65,154,.16) !important;
   border-color: #8b63ad !important;
 }
+
+
+/* QUBA light/dark appearance switch */
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:0 12px;border:1px solid #dfd2ed;border-radius:12px;background:#f4edfb;color:#58317b;font:inherit;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
+.theme-toggle span{display:grid;place-items:center}
+.theme-toggle:hover{background:#e9ddf5}
+.topbar-right{display:flex;align-items:center;gap:10px}
+html[data-theme="dark"]{color-scheme:dark;--background:230 18% 10%;--foreground:225 18% 92%;--card:230 17% 14%;--card-foreground:225 18% 92%;--border:230 13% 26%;--secondary:230 14% 21%;--secondary-foreground:225 18% 92%;--muted:230 14% 20%;--muted-foreground:225 10% 68%;--input:230 13% 28%;--accent:270 30% 30%;--accent-foreground:270 30% 95%}
+html[data-theme="dark"] body,html[data-theme="dark"] .app-shell{background:#17151d!important;color:#eeeaf4!important}
+html[data-theme="dark"] .main-area{background:#17151d!important}
+html[data-theme="dark"] .topbar{background:rgba(31,27,39,.94)!important;border-color:#393244!important;color:#eeeaf4}
+html[data-theme="dark"] .today-pill{background:#292432!important;border-color:#44394f!important;color:#eeeaf4}
+html[data-theme="dark"] .page-heading h1{color:#e6d4fa!important}
+html[data-theme="dark"] .page-wrap{color:#eeeaf4}
+html[data-theme="dark"] .panel,html[data-theme="dark"] .metric-card,html[data-theme="dark"] .data-card,html[data-theme="dark"] .form-card,html[data-theme="dark"] .settings-card,html[data-theme="dark"] .report-card,html[data-theme="dark"] .employee-card,html[data-theme="dark"] .product-card,html[data-theme="dark"] .order-card,html[data-theme="dark"] .table-history-card,html[data-theme="dark"] .table-detail-head,html[data-theme="dark"] .table-detail-summary>div,html[data-theme="dark"] .service-page-intro,html[data-theme="dark"] .quba-tables-section{background:#24202c!important;border-color:#403749!important;color:#eeeaf4!important}
+html[data-theme="dark"] .quba-simple-table,html[data-theme="dark"] .quba-table-card,html[data-theme="dark"] .quba-table-card:not(.table-tile-busy){background:#292432!important;border-color:#4b3b59!important;color:#f3edf8!important}
+html[data-theme="dark"] .quba-table-card.table-tile-busy{background:#302820!important;border-color:#665039!important;color:#fff1dc!important}
+html[data-theme="dark"] .quba-table-open .table-tile-balance,html[data-theme="dark"] .quba-table-open>small,html[data-theme="dark"] .quba-table-heading p{color:#d2c8dc!important}
+html[data-theme="dark"] .quba-table-pay{background:#49345b!important;border-color:#654c79!important;color:#f3e8ff!important}
+html[data-theme="dark"] .quba-table-pay:hover{background:#59416e!important}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#211d28!important;border-color:#51465b!important;color:#f3edf8!important}
+html[data-theme="dark"] .service-tabs,html[data-theme="dark"] .service-order-row,html[data-theme="dark"] .mini-table,html[data-theme="dark"] .quba-table-search{background:#292432!important;border-color:#403749!important;color:#eeeaf4!important}
+html[data-theme="dark"] .service-tabs button{color:#d5cadd}
+html[data-theme="dark"] .service-tabs button.active{background:#4b3760!important;color:#fff!important}
+html[data-theme="dark"] .modal,html[data-theme="dark"] .dialog-content,html[data-theme="dark"] [role="dialog"]{background:#24202c!important;border-color:#51465b!important;color:#f3edf8!important}
+html[data-theme="dark"] .theme-toggle{background:#3c2d4b;border-color:#654c79;color:#f1e5ff}
+html[data-theme="dark"] .theme-toggle:hover{background:#4b385e}
+html[data-theme="dark"] .table-detail-footer{background:rgba(38,33,46,.97)!important;border-color:#51465b!important;color:#f3edf8}
+html[data-theme="dark"] .empty-state,html[data-theme="dark"] .state-panel{color:#eeeaf4}
+@media(max-width:640px){.topbar-right{gap:6px}.theme-toggle{min-height:35px;padding:0 9px}.theme-toggle b{font-size:10px}.today-pill{font-size:9px}}

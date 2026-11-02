@@ -56,6 +56,39 @@ export async function signOutOwner(): Promise<void> {
   }
 }
 
+function adminLoginEmail(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  return `admin-${digits}@qubacafe.app`;
+}
+
+export async function signInAdmin(phone: string, password: string): Promise<User> {
+  if (!auth || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
+  const normalized = phone.trim();
+  if (!/^\\+[1-9]\\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format.');
+  const result = await signInWithEmailAndPassword(auth, adminLoginEmail(normalized), password);
+  return result.user;
+}
+
+export async function createAdminAuthAccount(phone: string, password: string): Promise<string> {
+  if (!app || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
+  if (password.length < 6) throw new Error('Admin password must be at least 6 characters.');
+  const secondaryName = 'quba-admin-provisioning';
+  const secondaryApp = getApps().find((item) => item.name === secondaryName) ?? initializeApp(config, secondaryName);
+  const secondaryAuth = getAuth(secondaryApp);
+  try {
+    const result = await createUserWithEmailAndPassword(secondaryAuth, adminLoginEmail(phone), password);
+    return result.user.uid;
+  } catch (error: any) {
+    if (error?.code === 'auth/email-already-in-use') {
+      const existing = await signInWithEmailAndPassword(secondaryAuth, adminLoginEmail(phone), password);
+      return existing.user.uid;
+    }
+    throw error;
+  } finally {
+    await signOut(secondaryAuth).catch(() => undefined);
+  }
+}
+
 function employeeLoginEmail(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   return `employee-${digits}@qubacafe.app`;

@@ -998,3 +998,33 @@ input:focus,select:focus,textarea:focus {
   .metric-card>strong { font-size:16px; }
   .today-pill { padding:7px 9px;font-size:9px; }
 }
+
+
+/* QUBA main screen: clean table-first workspace and quick actions */
+.quba-main-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.quba-main-actions>span{display:grid;place-items:center;min-width:42px;height:38px;padding:0 10px;border-radius:12px;background:#f2f4ed;color:#315b47;font-weight:800}
+.quba-main-actions .button{min-height:40px;padding:0 14px;font-size:12px}
+.quba-tables-grid{align-items:stretch}
+.quba-table-card{min-width:0;display:flex;flex-direction:column;gap:8px;padding:8px;border:1px solid #dce8dd;border-radius:17px;background:linear-gradient(180deg,#f7fbf7,#fff);box-shadow:0 3px 12px rgba(24,57,42,.045)}
+.quba-table-card.table-tile-busy{border-color:#ead9b9;background:linear-gradient(180deg,#fffaf1,#fff)}
+.quba-table-open{width:100%;min-height:133px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:9px 5px;border:0;border-radius:12px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.quba-table-open:hover{background:rgba(35,83,61,.045)}
+.quba-table-open .table-tile-number{font-size:30px;line-height:1.1;font-weight:850}
+.quba-table-open>small{font-size:10px;color:#68766e}
+.quba-table-open .table-tile-balance{font-size:13px;color:#263f31}
+.quba-table-open .table-tile-action{display:flex;align-items:center;gap:5px;margin-top:2px;color:#315b47;font-size:11px;font-weight:800}
+.quba-table-pay{width:100%;min-height:37px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #d9e7dc;border-radius:11px;background:#eaf4ec;color:#256442;font:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.quba-table-pay:hover{background:#dceee0}
+.quba-table-pay:disabled{opacity:.55;cursor:wait}
+.quba-tables-only{display:grid;gap:14px}
+.quba-tables-section{padding:20px}
+.quba-tables-heading{align-items:center}
+.quba-tables-heading p{max-width:540px}
+@media(max-width:640px){
+ .quba-main-actions{width:100%;justify-content:space-between}
+ .quba-main-actions .button{flex:1;justify-content:center;white-space:normal;line-height:1.4;min-height:42px}
+ .quba-tables-heading{align-items:flex-start;flex-wrap:wrap}
+ .quba-tables-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .quba-table-card{padding:6px}
+ .quba-table-open{min-height:126px}
+}

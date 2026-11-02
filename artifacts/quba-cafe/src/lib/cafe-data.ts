@@ -291,7 +291,19 @@ export async function ensureDefaultTables(): Promise<void> {
     if (existingNumbers.has(number)) continue;
     const tableRef = doc(ownerCollection('tables'), `quba-table-${String(number).padStart(2, '0')}`);
     const existingDoc = await getDoc(tableRef);
-    if (existingDoc.exists()) continue;
+    if (existingDoc.exists()) {
+      // Repair a canonical table document even if its label was accidentally
+      // removed or changed; otherwise it would be skipped forever.
+      const existingData = existingDoc.data();
+      await updateDoc(tableRef, {
+        label: String(number),
+        seats: Number(existingData.seats || 4),
+        status: existingData.status === 'closed' ? 'available' : (existingData.status || 'available'),
+        active: true,
+        updatedAt: now,
+      });
+      continue;
+    }
     await setDoc(tableRef, {
       label: String(number),
       seats: 4,

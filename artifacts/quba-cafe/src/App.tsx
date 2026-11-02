@@ -556,7 +556,7 @@ function AdminsPage({ employees, locale, actions, notify }: { employees: AnyReco
     try {
       await actions.setEmployeeRole(employee.phoneE164, nextRole);
       notify(nextRole === 'super_admin'
-        ? (isKu ? 'ئەدمین بە سەرکەوتوویی زیادکرا. بۆ چوونەژوورەوە جارێکی تر بچێتە ژوورەوە.' : 'تمت إضافة المشرف. عليه تسجيل الدخول مجدداً.')
+        ? (isKu ? 'ئەدمین زیادکرا؛ بۆ دەستپێکردنی داشبۆرد جارێکی تر بچێتە ژوورەوە.' : 'تمت الترقية؛ يجب تسجيل الدخول مجدداً.')
         : (isKu ? 'مافی ئەدمینی لابرا.' : 'تم سحب صلاحية المشرف.'));
     } catch (error) {
       notify(error instanceof Error ? error.message : (isKu ? 'هەڵە ڕوویدا' : 'حدث خطأ'));
@@ -564,15 +564,12 @@ function AdminsPage({ employees, locale, actions, notify }: { employees: AnyReco
   }
   return <section className="data-section">
     <div className="section-heading">
-      <div>
-        <h2>{isKu ? 'بەڕێوەبەرانی قوبە' : 'مشرفو قوبا'}</h2>
-        <p className="muted">{isKu ? 'تەنها خاوەن قوبە دەتوانێت ئەدمین زیاد بکات یان مافی ئەدمینی لاببات.' : 'المالك وحده يستطيع إضافة المشرفين أو سحب صلاحياتهم.'}</p>
-      </div>
+      <div><h2>{isKu ? 'بەڕێوەبەرانی قوبە' : 'مشرفو قوبا'}</h2><p className="muted">{isKu ? 'تەنها خاوەن قوبە دەتوانێت ئەدمین زیاد بکات یان مافی ئەدمینی لاببات.' : 'المالك وحده يستطيع إضافة المشرفين أو سحب صلاحياتهم.'}</p></div>
       <span className="count-pill">{admins.length}</span>
     </div>
     <div className="panel" style={{ padding: 16, marginBottom: 16 }}>
       <b>{isKu ? 'ئەدمینە چالاکەکان' : 'المشرفون الحاليون'}</b>
-      {admins.length === 0 ? <p className="muted">{isKu ? 'هێشتا هیچ ئەدمینێک نییە. لە لیستی خوارەوە کارمەندێک هەڵبژێرە.' : 'لا يوجد مشرفون بعد. اختر موظفاً من القائمة أدناه.'}</p> :
+      {admins.length === 0 ? <p className="muted">{isKu ? 'هێشتا ئەدمینێک نییە؛ لە لیستی خوارەوە کارمەندێک هەڵبژێرە.' : 'لا يوجد مشرفون بعد؛ اختر موظفاً من القائمة.'}</p> :
         <div className="employee-admin-list">{admins.map((employee) => <article className="panel employee-admin-card" key={employee.phoneE164}>
           <div><b>{employee.name}</b><small dir="ltr">{employee.phoneE164}</small><small>{isKu ? 'ئەدمینی تەواو' : 'مشرف كامل'}</small></div>
           <button className="button button-secondary small-button" type="button" disabled={busyPhone === employee.phoneE164 || employee.active === false} onClick={() => void changeRole(employee)}>{isKu ? 'لابردنی ئەدمین' : 'إلغاء الإشراف'}</button>

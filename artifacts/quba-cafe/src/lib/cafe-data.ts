@@ -605,27 +605,36 @@ export async function addTablePayment(tableId: string, input: { amountIqd: numbe
       const payments = Array.isArray(order.data.payments) ? order.data.payments : [];
       const paid = payments.reduce((sum: number, payment: any) => sum + Number(payment.amountIqd || 0), 0);
       return { ...order, payments, due: Math.max(0, Number(order.data.totalIqd || 0) - paid) };
-    });
+    }).sort((a, b) => String(a.data.createdAt || '').localeCompare(String(b.data.createdAt || '')));
     const totalDue = balances.reduce((sum, order) => sum + order.due, 0);
-    if (input.amountIqd !== totalDue) {
-      throw new Error('Please collect the exact remaining balance for this table.');
+    if (input.amountIqd > totalDue) {
+      throw new Error('Payment cannot exceed the remaining table balance.');
     }
 
     const now = new Date().toISOString();
+    let remainingPayment = input.amountIqd;
+    let hasUnpaidBalance = false;
     for (const order of balances) {
+      const applied = Math.min(order.due, remainingPayment);
+      remainingPayment -= applied;
+      const fullyPaid = applied >= order.due;
+      if (!fullyPaid) hasUnpaidBalance = true;
       transaction.update(order.ref, {
-        payments: order.due > 0
-          ? [...order.payments, { amountIqd: order.due, method: input.method, createdAt: now }]
+        payments: applied > 0
+          ? [...order.payments, { amountIqd: applied, method: input.method, createdAt: now }]
           : order.payments,
-        status: 'paid',
-        paidAt: now,
+        status: fullyPaid ? 'paid' : order.data.status,
+        paidAt: fullyPaid ? now : null,
         updatedAt: now,
       });
     }
-    transaction.update(tableRef, { status: 'available', active: true, updatedAt: now });
+    transaction.update(tableRef, {
+      status: hasUnpaidBalance ? 'occupied' : 'available',
+      active: true,
+      updatedAt: now,
+    });
   });
 }
-
 export async function cancelOrder(orderId: string): Promise<void> {
   assertOwner();
   if (!db) throw new Error('Firebase is not configured for this app.');

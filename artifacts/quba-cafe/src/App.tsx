@@ -146,16 +146,11 @@ const copy = {
 
 const navItems = [
   { path: '/', key: 'tables', icon: Utensils },
-  { path: '/orders', key: 'orders', icon: ClipboardList },
   { path: '/archive', key: 'archive', icon: Archive },
   { path: '/menu', key: 'products', icon: Coffee },
-  { path: '/categories', key: 'categories', icon: Boxes },
-
   { path: '/service', key: 'service', icon: Coffee },
-  { path: '/customers', key: 'customers', icon: Users },
   { path: '/employees', key: 'employees', icon: Users },
   { path: '/expenses', key: 'expenses', icon: Wallet },
-  { path: '/reports', key: 'reports', icon: FileBarChart2 },
   { path: '/settings', key: 'settings', icon: Settings2 },
 ] as const;
 

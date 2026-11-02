@@ -8,7 +8,7 @@ import { getActiveEmployeeProfile, isFirebaseConfigured, listenForAppAuth, owner
 import type { User } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import {
-  Activity, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
+  Activity, Archive, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
   ChevronDown, CircleAlert, ClipboardList, Coffee, CreditCard, FileBarChart2,
   Globe2, LayoutDashboard, LoaderCircle, LogOut, Menu, Pencil, Plus, Search, Settings2,
   Trash2, Users, Utensils, Wallet, X,
@@ -57,7 +57,7 @@ const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
     dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
-    orders: 'داواکارییەکان', quickOrder: 'داواکاری خێرا', customers: 'کڕیارەکان', employees: 'کارمەندان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
+    orders: 'داواکارییەکان', archive: 'ئەرشیف', archiveRemove: 'لابردن لە ئەرشیف', archiveConfirm: 'دڵنیایت دەتەوێت ئەم تۆمارە لە ئەرشیف لاببەیت؟ مێژووی فرۆشتن و ڕاپۆرتەکان دەمێننەوە.', quickOrder: 'داواکاری خێرا', customers: 'کڕیارەکان', employees: 'کارمەندان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
@@ -102,7 +102,7 @@ const copy = {
   ar: {
     brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
     dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
-    orders: 'الطلبات', quickOrder: 'طلب سريع', customers: 'الزبائن', employees: 'الموظفون', expenses: 'المصروفات', reports: 'التقارير',
+    orders: 'الطلبات', archive: 'الأرشيف', archiveRemove: 'إزالة من الأرشيف', archiveConfirm: 'هل تريد إزالة هذا السجل من الأرشيف؟ ستبقى بيانات المبيعات والتقارير محفوظة.', quickOrder: 'طلب سريع', customers: 'الزبائن', employees: 'الموظفون', expenses: 'المصروفات', reports: 'التقارير',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
@@ -149,6 +149,7 @@ const copy = {
 const navItems = [
   { path: '/', key: 'tables', icon: Utensils },
   { path: '/orders', key: 'orders', icon: ClipboardList },
+  { path: '/archive', key: 'archive', icon: Archive },
   { path: '/pos', key: 'quickOrder', icon: Plus },
   { path: '/menu', key: 'products', icon: Coffee },
   { path: '/categories', key: 'categories', icon: Boxes },
@@ -572,6 +573,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (error) return <ErrorContent locale={locale} message={error} onRetry={() => window.location.reload()} />;
     if (path === '/') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
+    if (path === '/archive') return <ArchivePage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/pos') return <QuickOrderPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
@@ -1185,7 +1187,7 @@ function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const [newOrder, setNewOrder] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => { const open = () => setNewOrder(true); window.addEventListener('open-new-order', open); return () => window.removeEventListener('open-new-order', open); }, []);
-  const orders = data.orders.filter((o: AnyRecord) => (filter === 'all' || normalizeOrderStatus(o.status) === filter)).filter((o: AnyRecord) => JSON.stringify(o).toLowerCase().includes(search.toLowerCase()));
+  const orders = data.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(o.status))).filter((o: AnyRecord) => (filter === 'all' || normalizeOrderStatus(o.status) === filter)).filter((o: AnyRecord) => JSON.stringify(o).toLowerCase().includes(search.toLowerCase()));
   async function pay(amount: number, method: string) {
     if (!paymentOrder) return;
     setBusy(true);
@@ -1197,11 +1199,61 @@ function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     try { await actions.cancelOrder(order.id); notify(t.saved); } catch { notify(t.serverError); } finally { setBusy(false); }
   }
   return <>
-    <div className="list-toolbar orders-toolbar"><label className="search-box"><Search size={17} /><input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-orders" /></label><select value={filter} onChange={(e) => setFilter(e.target.value)} data-testid="select-order-filter"><option value="all">{t.all}</option><option value="new">{t.orderNew}</option><option value="preparing">{t.orderPreparing}</option><option value="ready">{t.orderReady}</option><option value="delivered">{t.orderDelivered}</option><option value="paid">{t.orderPaid}</option><option value="cancelled">{t.orderCancelled}</option></select></div>
+    <div className="list-toolbar orders-toolbar"><label className="search-box"><Search size={17} /><input placeholder={t.search} value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-orders" /></label><select value={filter} onChange={(e) => setFilter(e.target.value)} data-testid="select-order-filter"><option value="all">{t.all}</option><option value="new">{t.orderNew}</option><option value="preparing">{t.orderPreparing}</option><option value="ready">{t.orderReady}</option><option value="delivered">{t.orderDelivered}</option></select></div>
     {orders.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : t.noOrders} detail={search ? '' : t.startOrder} /> : <div className="order-cards">{orders.map((order: AnyRecord) => <OrderCard key={order.id} order={order} data={data} locale={locale} t={t} onPay={() => setPaymentOrder(order)} onCancel={() => setCancelPrompt(order)} busy={busy} actions={actions} notify={notify} />)}</div>}
     {paymentOrder && <PaymentDialog order={paymentOrder} locale={locale} t={t} busy={busy} onClose={() => setPaymentOrder(null)} onPay={pay} />}
     {cancelPrompt && <ConfirmDialog t={t} busy={busy} title={t.cancelOrder} prompt={t.confirmCancelOrder} onClose={() => setCancelPrompt(null)} onConfirm={async () => { await cancel(cancelPrompt); setCancelPrompt(null); }} />}
     {newOrder && <NewOrderDialog data={data} locale={locale} t={t} busy={busy} onClose={() => setNewOrder(false)} onCreate={async (payload) => { setBusy(true); try { await actions.createOrder(payload); setNewOrder(false); notify(t.saved); } catch { notify(t.serverError); } finally { setBusy(false); } }} />}
+  </>;
+}
+
+
+function ArchivePage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
+  const [search, setSearch] = useState('');
+  const [removing, setRemoving] = useState<AnyRecord | null>(null);
+  const [busy, setBusy] = useState(false);
+  const archivedOrders = data.orders
+    .filter((order: AnyRecord) => ['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)) && order.archiveHidden !== true)
+    .filter((order: AnyRecord) => JSON.stringify(order).toLowerCase().includes(search.toLowerCase()))
+    .sort((a: AnyRecord, b: AnyRecord) => asDate(b.paidAt || b.updatedAt || b.createdAt).getTime() - asDate(a.paidAt || a.updatedAt || a.createdAt).getTime());
+  async function removeFromArchive() {
+    if (!removing) return;
+    setBusy(true);
+    try {
+      // Hide only from the archive; retain the original order and payments for reports.
+      await actions.updateRecord('orders', removing.id, { archiveHidden: true });
+      setRemoving(null);
+      notify(t.saved);
+    } catch (error) {
+      notify(recordActionError(error, t));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return <>
+    <div className="list-toolbar orders-toolbar">
+      <label className="search-box"><Search size={17} /><input placeholder={t.search} value={search} onChange={(event) => setSearch(event.target.value)} data-testid="input-search-archive" /></label>
+      <span className="status-badge badge-paid">{archivedOrders.length} · {t.archive}</span>
+    </div>
+    {archivedOrders.length === 0
+      ? <EmptyState locale={locale} title={search ? t.noResults : t.emptyTitle} detail={search ? '' : t.emptyText} />
+      : <div className="order-cards">{archivedOrders.map((order: AnyRecord) => {
+          const table = data.tables.find((item: AnyRecord) => item.id === order.tableId);
+          const customer = data.customers.find((item: AnyRecord) => item.id === order.customerId);
+          const paid = (order.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0);
+          const status = normalizeOrderStatus(order.status);
+          return <article className="order-card" key={order.id} data-testid={`archive-order-${order.id}`}>
+            <div className="order-card-top"><div className="order-card-meta"><span className={`status-badge ${status === 'paid' ? 'badge-paid' : 'badge-cancelled'}`}>{orderStatusLabel(status, locale, t)}</span><b>{t.table} {table?.label || '—'}</b></div><small>{dateText(order.paidAt || order.updatedAt || order.createdAt, locale)}</small></div>
+            <div className="order-card-body">
+              <div className="customer-callout"><strong>{customer?.name || t.noCustomer}</strong><small>{customer?.phone || ''}</small></div>
+              <div className="order-lines">{combineOrderItems(order.items || []).map((item: AnyRecord, index: number) => <div key={`${item.productId || item.nameKu || index}-${index}`}><span>{localized(item, locale) || item.nameKu || item.nameAr} <small>× {item.quantity}</small></span><b>{formatIQD(Number(item.unitPriceIqd || 0) * Number(item.quantity || 0), locale)}</b></div>)}</div>
+              <div className="order-card-bottom"><div><small>{t.total}</small><b>{formatIQD(order.totalIqd, locale)}</b><small className="paid-note">{t.paidAmount}: {formatIQD(paid, locale)}</small></div>
+                <div className="order-actions"><button className="button button-quiet small-button" type="button" onClick={() => setRemoving(order)} data-testid={`button-remove-archive-${order.id}`}><Trash2 size={14} />{t.archiveRemove}</button></div>
+              </div>
+            </div>
+          </article>;
+        })}</div>}
+    {removing && <ConfirmDialog t={t} busy={busy} title={t.archiveRemove} prompt={t.archiveConfirm} onClose={() => setRemoving(null)} onConfirm={() => void removeFromArchive()} />}
   </>;
 }
 

@@ -800,3 +800,37 @@ button:disabled { cursor: not-allowed; opacity: .62; }
 
 /* QUBA simplified tables-only screen */
 .quba-tables-only{display:grid;gap:24px}.quba-tables-section{background:var(--card,#fff);border:1px solid var(--border,#e7e5e4);border-radius:18px;padding:18px}.quba-tables-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.quba-tables-heading h2{margin:0;font-size:20px;font-weight:800}.quba-tables-heading>span{min-width:34px;height:34px;display:grid;place-items:center;border-radius:999px;background:var(--muted,#f1f5f9);font-weight:800}.quba-tables-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}.quba-simple-table{min-height:145px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;padding:14px 10px;border:1px solid var(--border,#e5e7eb);border-radius:16px;background:var(--background,#fff);color:inherit;cursor:pointer}.quba-simple-table .table-tile-number{font-size:27px;line-height:1.2}.quba-table-state{font-size:13px;font-weight:800;border-radius:999px;padding:4px 11px}.quba-table-state.is-active{color:#b45309;background:#fef3c7}.quba-table-state.is-inactive{color:#047857;background:#d1fae5}.quba-simple-table .table-tile-action{display:flex;align-items:center;gap:5px;font-size:12px}.quba-empty-tables{margin:0;padding:18px 8px;text-align:center;color:var(--muted-foreground,#64748b)}@media(max-width:520px){.quba-tables-section{padding:13px}.quba-tables-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quba-simple-table{min-height:132px}.quba-tables-heading h2{font-size:17px}}
+
+
+/* QUBA: one clear all-tables workspace */
+.quba-table-heading-copy{display:grid;gap:4px}
+.quba-tables-heading p{margin:4px 0 0;color:hsl(var(--muted-foreground));font-size:12px;line-height:1.7}
+.quba-table-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:4px 0 18px}
+.quba-table-search{display:flex;align-items:center;gap:9px;min-width:210px;max-width:340px;flex:1;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--background));padding:0 12px;color:hsl(var(--muted-foreground))}
+.quba-table-search input{width:100%;min-width:0;height:42px;border:0;outline:0;background:transparent;color:hsl(var(--foreground));font:inherit;font-size:12px}
+.quba-table-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.quba-table-filters button{display:inline-flex;align-items:center;gap:7px;border:1px solid hsl(var(--border));border-radius:10px;background:hsl(var(--card));color:hsl(var(--muted-foreground));padding:8px 11px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:background .18s,border-color .18s,color .18s}
+.quba-table-filters button b{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:hsl(var(--muted));font-size:10px}
+.quba-table-filters button.is-selected{background:hsl(var(--primary));border-color:hsl(var(--primary));color:hsl(var(--primary-foreground))}
+.quba-table-filters button.is-selected b{background:#ffffff25;color:inherit}
+.quba-tables-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:13px}
+.quba-simple-table{min-height:152px;position:relative;overflow:hidden;box-shadow:0 2px 8px #173e3208;transition:transform .18s,box-shadow .18s,border-color .18s}
+.quba-simple-table:hover{transform:translateY(-3px);box-shadow:0 12px 26px #173e3214;border-color:hsl(var(--primary)/.4)}
+.quba-simple-table:focus-visible{outline:3px solid hsl(var(--ring));outline-offset:2px}
+.quba-simple-table .table-tile-number{font-size:29px;font-weight:800;letter-spacing:-.04em}
+.quba-simple-table .quba-table-state{font-size:11px;padding:5px 12px}
+.quba-simple-table .quba-table-state.is-active{background:#fff0d9;color:#9b5b13}
+.quba-simple-table .quba-table-state.is-inactive{background:#e5f3e9;color:#28744b}
+.quba-simple-table.table-tile-busy{background:linear-gradient(180deg,#fffaf1,hsl(var(--card)));border-color:#ead9b9}
+.quba-simple-table:not(.table-tile-busy){background:linear-gradient(180deg,#f6fbf7,hsl(var(--card)));border-color:#d9e9dd}
+.quba-simple-table .table-tile-balance{font-size:13px;color:hsl(var(--foreground))}
+.quba-simple-table .table-tile-action{margin-top:3px;color:hsl(var(--primary));font-size:11px;font-weight:800}
+@media(max-width:640px){
+ .quba-table-toolbar{align-items:stretch}
+ .quba-table-search{max-width:none;min-width:100%}
+ .quba-table-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+ .quba-table-filters button{justify-content:center;padding:8px 5px}
+ .quba-tables-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .quba-simple-table{min-height:140px;padding:12px 8px}
+ .quba-tables-heading h2{font-size:19px}
+}

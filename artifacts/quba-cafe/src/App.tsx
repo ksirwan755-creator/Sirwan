@@ -10,7 +10,7 @@ import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import {
   Activity, Archive, ArrowDownLeft, ArrowUpRight, Banknote, Boxes, BriefcaseBusiness, CalendarDays,
   ChevronDown, CircleAlert, ClipboardList, Coffee, CreditCard, FileBarChart2,
-  Globe2, LayoutDashboard, LoaderCircle, LogOut, Menu, Pencil, Plus, Search, Settings2,
+  Globe2, LayoutDashboard, LoaderCircle, LogOut, Menu, Moon, Sun, Pencil, Plus, Search, Settings2,
   Trash2, Users, Utensils, Wallet, X,
 } from 'lucide-react';
 import { Link, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
@@ -545,8 +545,13 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
   const { data, loading, error } = dataState;
   const [path, setPath] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean>(() => { try { return localStorage.getItem('quba-theme') === 'dark'; } catch { return false; } });
   const [toast, setToast] = useState('');
   const [signingOut, setSigningOut] = useState(false);
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+    try { localStorage.setItem('quba-theme', darkMode ? 'dark' : 'light'); } catch { /* storage may be unavailable */ }
+  }, [darkMode]);
   useEffect(() => {
     if (data?.settings?.defaultLocale && (data.settings.defaultLocale === 'ku' || data.settings.defaultLocale === 'ar')) setLocale(data.settings.defaultLocale);
   }, [data?.settings?.defaultLocale, setLocale]);
@@ -610,7 +615,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
       <header className="topbar">
         <button className="icon-button mobile-menu" type="button" onClick={() => setMenuOpen(true)} aria-label={t.open} data-testid="button-open-menu"><Menu size={21} /></button>
         <div className="crumb"><span>{t.brand}</span><span className="crumb-slash">/</span><b>{pageTitle}</b></div>
-        <div className="topbar-right"><span className="today-pill"><CalendarDays size={15} />{new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date())}</span></div>
+        <div className="topbar-right"><button className="theme-toggle" type="button" onClick={() => setDarkMode((value) => !value)} aria-label={darkMode ? (locale === 'ku' ? 'گۆڕین بۆ ڕۆشنایی' : 'التبديل إلى الفاتح') : (locale === 'ku' ? 'گۆڕین بۆ تاریکی' : 'التبديل إلى الداكن')} title={darkMode ? (locale === 'ku' ? 'ڕۆشنایی' : 'فاتح') : (locale === 'ku' ? 'تاریکی' : 'داكن')}><span>{darkMode ? <Sun size={17} /> : <Moon size={17} />}</span><b>{darkMode ? (locale === 'ku' ? 'ڕۆشنایی' : 'فاتح') : (locale === 'ku' ? 'تاریکی' : 'داكن')}</b></button><span className="today-pill"><CalendarDays size={15} />{new Intl.DateTimeFormat(locale === 'ku' ? 'ckb-IQ' : 'ar-IQ', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date())}</span></div>
       </header>
       <div className="page-wrap">
         <div className="page-heading"><div><p className="eyebrow page-eyebrow">QUBA · {t.ownerDesk}</p><h1>{pageTitle}</h1></div>{path === '/orders' && <button className="button button-primary" type="button" onClick={() => window.dispatchEvent(new Event('open-new-order'))}>{t.newOrder}</button>}</div>

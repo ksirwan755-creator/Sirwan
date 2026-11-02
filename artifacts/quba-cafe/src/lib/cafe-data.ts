@@ -200,7 +200,7 @@ export async function createEmployee(input: { name: string; phoneE164: string; p
   };
   await setDoc(ref, profile);
   await setDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid), profile);
-  await setDoc(doc(db, 'owners', ownerUid, 'staffLogin', `employee-${phoneE164.replace(/\\D/g, '')}`), { authEmail, role: 'employee', phoneE164, active: profile.active });
+  await setDoc(doc(db, 'owners', ownerUid, 'staffLogin', `employee-${phoneE164.replace(/\D/g, '')}`), { authEmail, role: 'employee', phoneE164, active: profile.active });
 }
 
 export async function updateEmployee(phoneE164: string, changes: { name?: string; assignedTableIds?: string[]; assignedTables?: { id: string; label: string }[]; active?: boolean }): Promise<void> {
@@ -230,7 +230,7 @@ export async function deleteEmployee(phoneE164: string): Promise<void> {
   if (uid) {
     await deleteDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid));
   }
-  await deleteDoc(doc(db, 'owners', ownerUid, 'staffLogin', `employee-${phoneE164.replace(/\\D/g, '')}`));
+  await deleteDoc(doc(db, 'owners', ownerUid, 'staffLogin', `employee-${phoneE164.replace(/\D/g, '')}`));
   await deleteDoc(employeeRef);
 }
 
@@ -251,7 +251,7 @@ export async function createAdmin(input: { name: string; phoneE164: string; pass
   if (previousUid && previousUid !== uid) await deleteDoc(doc(db, 'owners', ownerUid, 'adminAccess', previousUid));
   await setDoc(adminRef, profile);
   await setDoc(doc(db, 'owners', ownerUid, 'adminAccess', uid), profile);
-  await setDoc(doc(db, 'owners', ownerUid, 'staffLogin', `admin-${phoneE164.replace(/\\D/g, '')}`), { authEmail, role: 'admin', phoneE164, active: true });
+  await setDoc(doc(db, 'owners', ownerUid, 'staffLogin', `admin-${phoneE164.replace(/\D/g, '')}`), { authEmail, role: 'admin', phoneE164, active: true });
 }
 export async function updateAdmin(phoneE164: string, active: boolean): Promise<void> {
   if (!db || !auth?.currentUser || auth.currentUser.uid !== ownerUid) throw new Error('Only the cafe owner can manage admins.');
@@ -271,7 +271,7 @@ export async function deleteAdmin(phoneE164: string): Promise<void> {
   if (!snap.exists()) return;
   const uid = String(snap.data().authUid || '');
   if (uid) await deleteDoc(doc(db, 'owners', ownerUid, 'adminAccess', uid));
-  await deleteDoc(doc(db, 'owners', ownerUid, 'staffLogin', `admin-${phoneE164.replace(/\\D/g, '')}`));
+  await deleteDoc(doc(db, 'owners', ownerUid, 'staffLogin', `admin-${phoneE164.replace(/\D/g, '')}`));
   await deleteDoc(ref);
 }
 

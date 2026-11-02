@@ -33,7 +33,7 @@ service cloud.firestore {
     match /owners/{ownerUid}/employees/{phoneE164} {
       allow read: if isOwner(ownerUid)
         || (request.auth != null && resource.data.authUid == request.auth.uid);
-      allow create, update, delete: if isOwner(ownerUid) || isSuperAdmin(ownerUid);
+      allow create, update, delete: if isOwner(ownerUid);
     }
 
     match /owners/{ownerUid}/employees/{recordId} {

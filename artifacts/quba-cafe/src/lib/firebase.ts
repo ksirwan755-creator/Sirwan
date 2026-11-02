@@ -74,9 +74,9 @@ async function signInStaff(role: 'admin' | 'employee', phone: string, password: 
   if (!auth || !db || !isFirebaseConfigured) throw new Error('Firebase is not configured.');
   const normalized = phone.trim();
   if (!/^\+[1-9]\d{7,14}$/.test(normalized)) throw new Error('Enter the phone number in international format.');
-  const profileRef = doc(db, 'owners', ownerUid, role === 'admin' ? 'admins' : 'employees', normalized);
-  const profile = await getDoc(profileRef);
-  const savedEmail = profile.exists() ? String(profile.data().authEmail || '') : '';
+  const lookupRef = doc(db, 'owners', ownerUid, 'staffLogin', `${role}-${loginDigits(normalized)}`);
+  const lookup = await getDoc(lookupRef);
+  const savedEmail = lookup.exists() ? String(lookup.data().authEmail || '') : '';
   return (await signInWithEmailAndPassword(auth, savedEmail || legacyLoginEmail(role, normalized), password)).user;
 }
 

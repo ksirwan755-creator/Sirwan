@@ -1,76 +1,45 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isOwner(ownerUid) {
-      return request.auth != null && request.auth.uid == ownerUid;
+    function isOwner(ownerUid) { return request.auth != null && request.auth.uid == ownerUid; }
+    function adminAccessPath(ownerUid) { return /databases/$(database)/documents/owners/$(ownerUid)/adminAccess/$(request.auth.uid); }
+    function isActiveAdmin(ownerUid) {
+      return request.auth != null && exists(adminAccessPath(ownerUid))
+        && get(adminAccessPath(ownerUid)).data.active == true
+        && get(adminAccessPath(ownerUid)).data.authUid == request.auth.uid;
     }
-
-    function employeeAccessPath(ownerUid) {
-      return /databases/$(database)/documents/owners/$(ownerUid)/employeeAccess/$(request.auth.uid);
-    }
-
+    function isManager(ownerUid) { return isOwner(ownerUid) || isActiveAdmin(ownerUid); }
+    function employeeAccessPath(ownerUid) { return /databases/$(database)/documents/owners/$(ownerUid)/employeeAccess/$(request.auth.uid); }
     function isActiveEmployee(ownerUid) {
-      return request.auth != null
-        && exists(employeeAccessPath(ownerUid))
+      return request.auth != null && exists(employeeAccessPath(ownerUid))
         && get(employeeAccessPath(ownerUid)).data.active == true;
     }
-
     function employeeCanReadTable(ownerUid, tableId) {
-      return isActiveEmployee(ownerUid)
-        && tableId != null
+      return isActiveEmployee(ownerUid) && tableId != null
         && tableId in get(employeeAccessPath(ownerUid)).data.assignedTableIds;
     }
-
+    match /owners/{ownerUid}/admins/{adminId} { allow read, write: if isOwner(ownerUid); }
+    match /owners/{ownerUid}/adminAccess/{adminUid} {
+      allow read: if isOwner(ownerUid) || (request.auth != null && request.auth.uid == adminUid);
+      allow create, update, delete: if isOwner(ownerUid);
+    }
     match /owners/{ownerUid}/employees/{phoneE164} {
-      allow read: if isOwner(ownerUid)
-        || (request.auth != null && resource.data.authUid == request.auth.uid);
-      allow create, update, delete: if isOwner(ownerUid);
+      allow read: if isManager(ownerUid) || (request.auth != null && resource.data.authUid == request.auth.uid);
+      allow create, update, delete: if isManager(ownerUid);
     }
-
-    match /owners/{ownerUid}/employees/{recordId} {
-      allow read, write: if isOwner(ownerUid);
-    }
-
     match /owners/{ownerUid}/employeeAccess/{employeeUid} {
-      allow read: if isOwner(ownerUid)
-        || (request.auth != null && request.auth.uid == employeeUid);
-      allow create, update, delete: if isOwner(ownerUid);
+      allow read: if isManager(ownerUid) || (request.auth != null && request.auth.uid == employeeUid);
+      allow create, update, delete: if isManager(ownerUid);
     }
-
     match /owners/{ownerUid}/orders/{recordId} {
-      allow read: if isOwner(ownerUid)
-        || (employeeCanReadTable(ownerUid, resource.data.tableId)
-          && resource.data.status in ['new', 'preparing', 'ready', 'delivered']);
-      allow create, update, delete: if isOwner(ownerUid);
+      allow read: if isManager(ownerUid) || (employeeCanReadTable(ownerUid, resource.data.tableId)
+        && resource.data.status in ['new', 'preparing', 'ready', 'delivered']);
+      allow create, update, delete: if isManager(ownerUid);
     }
-
-    match /owners/{ownerUid}/categories/{recordId} {
-      allow read, write: if isOwner(ownerUid);
+    match /owners/{ownerUid}/{collectionName}/{recordId} {
+      allow read, write: if isManager(ownerUid)
+        && collectionName in ['categories', 'products', 'tables', 'expenses', 'customers', 'settings'];
     }
-
-    match /owners/{ownerUid}/products/{recordId} {
-      allow read, write: if isOwner(ownerUid);
-    }
-
-    match /owners/{ownerUid}/tables/{recordId} {
-      allow read, write: if isOwner(ownerUid);
-    }
-
-    match /owners/{ownerUid}/expenses/{recordId} {
-      allow read, write: if isOwner(ownerUid);
-    }
-
-    match /owners/{ownerUid}/customers/{recordId} {
-      allow read, write: if isOwner(ownerUid);
-    }
-
-    match /owners/{ownerUid}/settings/{recordId} {
-      allow read, write: if isOwner(ownerUid);
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
+    match /{document=**} { allow read, write: if false; }
   }
 }

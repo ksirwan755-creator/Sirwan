@@ -234,11 +234,13 @@ export async function deleteEmployee(phoneE164: string): Promise<void> {
 export async function createAdmin(input: { name: string; phoneE164: string; password: string }): Promise<void> {
   if (!db || !auth?.currentUser || auth.currentUser.uid !== ownerUid) throw new Error('Only the cafe owner can add admins.');
   const phoneE164 = input.phoneE164.trim();
-  if (!/^\\+[1-9]\\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format.');
+  if (!/^\+[1-9]\d{7,14}$/.test(phoneE164)) throw new Error('Enter a phone number in international format.');
   if (!input.name.trim()) throw new Error('Admin name is required.');
   if (input.password.length < 6) throw new Error('Password must be at least 6 characters.');
   const adminRef = doc(db, 'owners', ownerUid, 'admins', phoneE164);
   if ((await getDoc(adminRef)).exists()) throw new Error('This admin already exists.');
+  const employeeRef = doc(db, 'owners', ownerUid, 'employees', phoneE164);
+  if ((await getDoc(employeeRef)).exists()) throw new Error('This phone number already belongs to an employee.');
   const uid = await createEmployeeAuthAccount(phoneE164, input.password);
   const now = new Date().toISOString();
   const profile = { authUid: uid, phoneE164, name: input.name.trim(), active: true, createdAt: now, updatedAt: now };

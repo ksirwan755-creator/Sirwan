@@ -4,7 +4,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useCafeData } from '@/lib/cafe-data';
-import { getActiveEmployeeProfile, getActiveAdminProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signInEmployee, signOutOwner, db } from '@/lib/firebase';
+import { getActiveEmployeeProfile, getActiveAdminProfile, isFirebaseConfigured, listenForAppAuth, ownerUid, signInOwner, signInEmployee, signInAdmin, signOutOwner, db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import {
@@ -274,7 +274,7 @@ function App() {
         setAuthError(t.notOwner);
       }
     } catch { setAuthError(t.loginError); }
-  }} onEmployeeSignIn={async (phone, employeePassword) => { setAuthError(''); await signInEmployee(phone, employeePassword); }} />;
+  }} onEmployeeSignIn={async (phone, employeePassword) => { setAuthError(''); try { await signInAdmin(phone, employeePassword); } catch { await signInEmployee(phone, employeePassword); } }} />;
   if (employeeProfile) return <EmployeeOrdersScreen profile={employeeProfile} locale={locale} onLocale={setLocale} onSignOut={handleSignOut} />;
   return (
     <QueryClientProvider client={queryClient}>

@@ -13,7 +13,6 @@ import {
   setDoc,
   updateDoc,
   where,
-  writeBatch,
   type DocumentData,
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured, ownerUid, createEmployeeAuthAccount } from './firebase';
@@ -68,14 +67,13 @@ function ownerCollection(name: string) {
   return collection(db, 'owners', ownerUid, name);
 }
 
-function assertSignedIn() {
-  if (!isFirebaseConfigured || !db || !ownerUid) throw new Error('Firebase is not configured for this app.');
-  if (!auth?.currentUser) throw new Error('Sign in to continue.');
-}
-
 function assertOwner() {
-  assertSignedIn();
-  if (auth?.currentUser?.uid !== ownerUid) throw new Error('Only the cafe owner can manage employees, admins, and settings.');
+  if (!isFirebaseConfigured || !db || !ownerUid) {
+    throw new Error('Firebase is not configured for this app.');
+  }
+  if (!auth?.currentUser || auth.currentUser.uid !== ownerUid) {
+    throw new Error('Sign in with the cafe owner account to continue.');
+  }
 }
 
 function assertWholeAmount(value: number, label: string, allowZero = false) {
@@ -101,7 +99,7 @@ function normalizeOrderStatus(status?: OrderStatus | null): OrderStatus {
 }
 
 export async function createRecord(name: RecordCollection, input: WritableRecord): Promise<string> {
-  assertSignedIn();
+  assertOwner();
   const createdAt = new Date().toISOString();
   const payload = {
     ...input,
@@ -114,7 +112,7 @@ export async function createRecord(name: RecordCollection, input: WritableRecord
 }
 
 export async function updateRecord(name: RecordCollection, id: string, changes: Record<string, unknown>): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   if (!id.trim()) throw new Error('A record ID is required.');
   const payload = { ...changes, updatedAt: new Date().toISOString() } as Record<string, unknown>;
   validateRecord(name, payload, true);
@@ -122,7 +120,7 @@ export async function updateRecord(name: RecordCollection, id: string, changes: 
 }
 
 export async function deleteRecord(name: RecordCollection, id: string): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   if (name === 'products') {
     if (!id.trim()) throw new Error('A record ID is required.');
     await updateDoc(doc(ownerCollection(name), id), { active: false, updatedAt: new Date().toISOString() });
@@ -195,7 +193,6 @@ export async function createEmployee(input: { name: string; phoneE164: string; p
     authUid: uid,
     phoneE164,
     name: input.name.trim(),
-    role: 'employee',
     assignedTableIds: [...new Set(input.assignedTableIds)],
     assignedTables: input.assignedTables,
     active: input.active ?? (existing.exists() ? existing.data().active !== false : true),
@@ -219,21 +216,6 @@ export async function updateEmployee(phoneE164: string, changes: { name?: string
   await updateDoc(doc(db, 'owners', ownerUid, 'employeeAccess', uid), { ...changes, updatedAt });
 }
 
-export async function setEmployeeRole(phoneE164: string, role: 'employee' | 'super_admin'): Promise<void> {
-  assertOwner();
-  if (!db) throw new Error('Firebase is not configured.');
-  const employeeRef = doc(db, 'owners', ownerUid, 'employees', phoneE164);
-  const snapshot = await getDoc(employeeRef);
-  if (!snapshot.exists()) throw new Error('Employee record not found.');
-  const uid = String(snapshot.data().authUid || '');
-  if (!uid) throw new Error('Employee login account is missing.');
-  const updatedAt = new Date().toISOString();
-  const batch = writeBatch(db);
-  batch.update(employeeRef, { role, updatedAt });
-  batch.update(doc(db, 'owners', ownerUid, 'employeeAccess', uid), { role, updatedAt });
-  await batch.commit();
-}
-
 export async function deactivateEmployee(phoneE164: string): Promise<void> {
   await updateEmployee(phoneE164, { active: false });
 }
@@ -252,7 +234,7 @@ export async function deleteEmployee(phoneE164: string): Promise<void> {
 }
 
 export async function upsertCustomer(input: { name?: string; phone?: string; notes?: string }): Promise<string | null> {
-  assertSignedIn();
+  assertOwner();
   const name = input.name?.trim() ?? '';
   const phone = input.phone?.trim() ?? '';
   if (!name && !phone) return null;
@@ -282,7 +264,7 @@ export async function upsertCustomer(input: { name?: string; phone?: string; not
 }
 
 export async function ensureDefaultTables(): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   const snapshot = await getDocs(ownerCollection('tables'));
   const existingNumbers = new Set<number>();
   const now = new Date().toISOString();
@@ -334,7 +316,7 @@ export async function ensureDefaultTables(): Promise<void> {
 }
 
 export async function appendOrderItems(orderId: string, items: CreateOrderInput['items']): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   if (!db) throw new Error('Firebase is not configured for this app.');
   if (!items.length) throw new Error('Add at least one item to the order.');
   items.forEach((item) => {
@@ -368,7 +350,7 @@ export async function appendOrderItems(orderId: string, items: CreateOrderInput[
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<string> {
-  assertSignedIn();
+  assertOwner();
   if (!db) throw new Error('Firebase is not configured for this app.');
   if (input.items.length === 0) throw new Error('Add at least one item to the order.');
 
@@ -471,7 +453,7 @@ export async function createOrder(input: CreateOrderInput): Promise<string> {
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   if (!db) throw new Error('Firebase is not configured for this app.');
   const orderRef = doc(ownerCollection('orders'), orderId);
 
@@ -503,7 +485,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
 }
 
 export async function addPayment(orderId: string, input: { amountIqd: number; method: PaymentMethod }): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   assertWholeAmount(input.amountIqd, 'Payment amount');
   if (!db) throw new Error('Firebase is not configured for this app.');
   const orderRef = doc(ownerCollection('orders'), orderId);
@@ -554,7 +536,7 @@ export async function addPayment(orderId: string, input: { amountIqd: number; me
 }
 
 export async function addTablePayment(tableId: string, input: { amountIqd: number; method: PaymentMethod }): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   assertWholeAmount(input.amountIqd, 'Payment amount');
   if (!db) throw new Error('Firebase is not configured for this app.');
   const tableRef = doc(ownerCollection('tables'), tableId);
@@ -603,7 +585,7 @@ export async function addTablePayment(tableId: string, input: { amountIqd: numbe
 }
 
 export async function cancelOrder(orderId: string): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   if (!db) throw new Error('Firebase is not configured for this app.');
   const orderRef = doc(ownerCollection('orders'), orderId);
 
@@ -631,7 +613,7 @@ export async function cancelOrder(orderId: string): Promise<void> {
 }
 
 export async function updateTableStatus(tableId: string, status: TableStatus): Promise<void> {
-  assertSignedIn();
+  assertOwner();
   const targetStatus = normalizeTableStatus(status);
   await setDoc(doc(ownerCollection('tables'), tableId), {
     status: targetStatus,
@@ -675,22 +657,13 @@ export function useCafeData() {
         setLoading(false);
         return;
       }
-      const continueAsAdmin = async () => {
-        if (user.uid === ownerUid) return true;
-        try {
-          const accessSnapshot = await getDoc(doc(db, 'owners', ownerUid, 'employeeAccess', user.uid));
-          const access = accessSnapshot.exists() ? accessSnapshot.data() : null;
-          return access?.active === true && access?.authUid === user.uid && access?.role === 'super_admin';
-        } catch { return false; }
-      };
-      void continueAsAdmin().then((allowed) => {
-        if (!active) return;
-        if (!allowed) {
-          setLoading(false);
-          setError('This account is not authorized as a cafe owner or super admin.');
-          return;
-        }
-        setLoading(true);
+      if (user.uid !== ownerUid) {
+        setLoading(false);
+        setError('This account is not authorized as the cafe owner.');
+        return;
+      }
+
+      setLoading(true);
       const next: CafeDataSnapshot = { ...emptySnapshot };
       const loaded = new Set<string>();
       const markLoaded = (key: string) => {
@@ -738,7 +711,6 @@ export function useCafeData() {
         },
       );
       recordUnsubs.push(settingsUnsubscribe);
-      });
     });
 
     return () => {
@@ -766,7 +738,6 @@ export function useCafeData() {
     upsertCustomer,
     createEmployee,
     updateEmployee,
-    setEmployeeRole,
     deactivateEmployee,
     deleteEmployee,
     saveSettings,

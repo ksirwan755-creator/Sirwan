@@ -57,7 +57,6 @@ const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
     dashboard: 'پوختەی ڕۆژ', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
-    orders: 'داواکارییەکان', archive: 'ئەرشیف', archiveRemove: 'لابردن لە ئەرشیف', archiveConfirm: 'دڵنیایت دەتەوێت ئەم تۆمارە لە ئەرشیف لاببەیت؟ مێژووی فرۆشتن و ڕاپۆرتەکان دەمێننەوە.', quickOrder: 'داواکاری خێرا', customers: 'کڕیارەکان', employees: 'کارمەندان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
@@ -102,7 +101,6 @@ const copy = {
   ar: {
     brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
     dashboard: 'ملخص اليوم', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
-    orders: 'الطلبات', archive: 'الأرشيف', archiveRemove: 'إزالة من الأرشيف', archiveConfirm: 'هل تريد إزالة هذا السجل من الأرشيف؟ ستبقى بيانات المبيعات والتقارير محفوظة.', quickOrder: 'طلب سريع', customers: 'الزبائن', employees: 'الموظفون', expenses: 'المصروفات', reports: 'التقارير',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',
@@ -578,7 +576,6 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
     if (path === '/') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/orders') return <OrdersPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/archive') return <ArchivePage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
-    if (path === '/pos') return <QuickOrderPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/categories') return <DataPage kind="categories" records={snap.categories} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/tables') return <TablesPage data={snap} locale={locale} t={t} actions={dataState} notify={notify} />;
     if (path === '/service') return <ServicePage data={snap} locale={locale} t={t} />;
@@ -1059,130 +1056,6 @@ function ServicePage({ data, locale, t }: { data: AnyRecord; locale: Locale; t: 
 }
 
 
-function QuickOrderPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
-  const [tableId, setTableId] = useState('');
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [search, setSearch] = useState('');
-  const [categoryId, setCategoryId] = useState('all');
-  const [busy, setBusy] = useState(false);
-  const isKu = locale === 'ku';
-  const tables = data.tables.filter((table: AnyRecord) => table.active !== false && getTableState(table) !== 'closed')
-    .sort((a: AnyRecord, b: AnyRecord) => String(a.label).localeCompare(String(b.label), undefined, { numeric: true }));
-  const products = data.products.filter((product: AnyRecord) => product.active !== false);
-  const categories = [...data.categories].sort((a: AnyRecord, b: AnyRecord) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
-  const selectedItems = products.filter((product: AnyRecord) => (quantities[product.id] || 0) > 0);
-  const total = selectedItems.reduce((sum: number, product: AnyRecord) => sum + Number(product.priceIqd || 0) * quantities[product.id], 0);
-  const activeOrders = data.orders.filter((order: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)))
-    .sort((a: AnyRecord, b: AnyRecord) => asDate(b.createdAt).getTime() - asDate(a.createdAt).getTime());
-  const visibleProducts = products.filter((product: AnyRecord) => {
-    const name = (localized(product, locale) || product.nameKu || product.nameAr || '').toLowerCase();
-    return (categoryId === 'all' || product.categoryId === categoryId) && name.includes(search.toLowerCase());
-  });
-  function chooseTable(nextId: string) {
-    if (nextId === tableId) return;
-    setTableId(nextId);
-    setQuantities({});
-  }
-  async function submit() {
-    if (!tableId || selectedItems.length === 0 || busy) return;
-    setBusy(true);
-    try {
-      const items = selectedItems.map((product: AnyRecord) => ({
-        productId: product.id, nameKu: product.nameKu, nameAr: product.nameAr,
-        categoryId: product.categoryId || '', quantity: quantities[product.id],
-        unitPriceIqd: Number(product.priceIqd || 0),
-      }));
-      await actions.createOrder({ tableId, customerId: null, items, notes: '', status: 'new' });
-      setQuantities({});
-      notify(isKu ? 'داواکارییەکە بۆ چێشتخانە نێردرا' : 'تم إرسال الطلب إلى المطبخ');
-    } catch (error) {
-      notify(recordActionError(error, t));
-    } finally { setBusy(false); }
-  }
-  const selectedTable = tables.find((table: AnyRecord) => table.id === tableId);
-  const panelStyle: React.CSSProperties = { background: 'var(--surface, #fff)', border: '1px solid var(--border, #e5e7eb)', borderRadius: 16, padding: 16, boxShadow: '0 2px 8px rgba(15,23,42,.04)' };
-  const mutedText: React.CSSProperties = { color: 'var(--muted, #7b8492)' };
-  return <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(290px, 1fr)', gap: 16, alignItems: 'start' }}>
-    <section style={{ display: 'grid', gap: 16, minWidth: 0 }}>
-      <div style={panelStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 13 }}>
-          <h3 style={{ margin: 0, fontSize: 15 }}>🪑 {isKu ? '١. هەڵبژاردنی مێز' : '١. اختيار الطاولة'}</h3>
-          <span style={{ fontSize: 11, ...mutedText }}>{tables.length} {t.tables}</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))', gap: 9 }}>
-          {tables.map((table: AnyRecord) => {
-            const occupied = activeOrders.some((order: AnyRecord) => order.tableId === table.id);
-            const selected = tableId === table.id;
-            return <button type="button" key={table.id} onClick={() => chooseTable(table.id)} aria-pressed={selected}
-              style={{ padding: '10px 6px', minHeight: 67, borderRadius: 12, border: selected ? '2px solid #d99a22' : '1px solid var(--border, #e5e7eb)', background: selected ? '#fff3d6' : occupied ? '#fff0ed' : 'var(--surface-muted, #f8fafc)', color: 'inherit', cursor: 'pointer', display: 'grid', placeContent: 'center', gap: 4 }}>
-              <small style={{ fontSize: 10, opacity: .75 }}>{isKu ? 'مێزی' : 'طاولة'}</small><b style={{ fontSize: 18 }}>{table.label}</b>
-              <small style={{ fontSize: 10, color: selected ? '#9a6500' : occupied ? '#b45345' : mutedText.color }}>{selected ? (isKu ? 'هەڵبژێردرا' : 'محدد') : occupied ? (isKu ? 'چالاک' : 'مشغول') : t.tableAvailable}</small>
-            </button>;
-          })}
-        </div>
-      </div>
-      <div style={panelStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-          <h3 style={{ margin: 0, fontSize: 15 }}>🍽️ {isKu ? '٢. هەڵبژاردنی خواردن' : '٢. اختيار الطعام'}</h3>
-          <label style={{ position: 'relative', width: 'min(100%, 230px)' }}>
-            <Search size={15} style={{ position: 'absolute', right: 10, top: 10, color: '#94a3b8' }} />
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t.search + '...'} style={{ width: '100%', padding: '8px 32px 8px 10px', borderRadius: 9, border: '1px solid var(--border, #e5e7eb)', background: 'var(--surface-muted, #f8fafc)', color: 'inherit', fontSize: 12 }} />
-          </label>
-        </div>
-        <div style={{ display: 'flex', gap: 7, overflowX: 'auto', paddingBottom: 10, marginBottom: 10 }}>
-          <button type="button" onClick={() => setCategoryId('all')} style={{ whiteSpace: 'nowrap', border: 0, borderRadius: 10, padding: '8px 13px', background: categoryId === 'all' ? '#e9a72e' : 'var(--surface-muted, #f1f5f9)', color: categoryId === 'all' ? '#172033' : 'inherit', fontWeight: 700, fontSize: 12 }}>{t.all}</button>
-          {categories.map((category: AnyRecord) => <button type="button" key={category.id} onClick={() => setCategoryId(category.id)} style={{ whiteSpace: 'nowrap', border: 0, borderRadius: 10, padding: '8px 13px', background: categoryId === category.id ? '#e9a72e' : 'var(--surface-muted, #f1f5f9)', color: categoryId === category.id ? '#172033' : 'inherit', fontWeight: categoryId === category.id ? 700 : 500, fontSize: 12 }}>{localized(category, locale) || category.nameKu || category.nameAr}</button>)}
-        </div>
-        {visibleProducts.length === 0 ? <EmptyState locale={locale} title={search ? t.noResults : t.noProducts} /> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 10, maxHeight: 390, overflowY: 'auto', padding: 2 }}>
-          {visibleProducts.map((product: AnyRecord) => {
-            const qty = quantities[product.id] || 0;
-            return <article key={product.id} style={{ border: '1px solid var(--border, #e5e7eb)', background: 'var(--surface-muted, #f8fafc)', borderRadius: 12, padding: 11, display: 'grid', gap: 10 }}>
-              <div><b style={{ fontSize: 12 }}>{localized(product, locale) || product.nameKu || product.nameAr}</b><small style={{ display: 'block', color: '#c58a1b', fontWeight: 800, marginTop: 5 }}>{formatIQD(product.priceIqd, locale)}</small></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
-                {qty > 0 ? <div className="qty-control"><button type="button" aria-label="-" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: Math.max(0, (prev[product.id] || 0) - 1) }))}>−</button><b>{qty}</b><button type="button" aria-label="+" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }))}>+</button></div> : <span />}
-                <button type="button" className="button button-secondary small-button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }))}><Plus size={13} />{isKu ? 'زیادکردن' : 'إضافة'}</button>
-              </div>
-            </article>;
-          })}
-        </div>}
-      </div>
-    </section>
-    <section style={{ display: 'grid', gap: 16, alignContent: 'start', minWidth: 0 }}>
-      <div style={panelStyle}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, paddingBottom: 11, borderBottom: '1px solid var(--border, #e5e7eb)' }}>
-          <h3 style={{ margin: 0, fontSize: 14 }}>🧾 {isKu ? 'سەبەتەی داواکاری' : 'سلة الطلب'}</h3>
-          <span className="status-badge badge-open">{selectedTable ? (isKu ? 'مێزی ' : 'طاولة ') + selectedTable.label : t.selectTable}</span>
-        </div>
-        {selectedItems.length === 0 ? <div style={{ textAlign: 'center', padding: '22px 8px', ...mutedText }}><Utensils size={25} style={{ margin: '0 auto 7px' }} /><p style={{ margin: 0, fontSize: 12 }}>{isKu ? 'هیچ خواردنێک هەڵنەبژێردراوە' : 'لم يتم اختيار أي صنف'}</p></div> : <div style={{ display: 'grid', gap: 8, padding: '12px 0', maxHeight: 210, overflowY: 'auto' }}>
-          {selectedItems.map((product: AnyRecord) => <div key={product.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: 9, borderRadius: 10, background: 'var(--surface-muted, #f8fafc)' }}>
-            <div style={{ minWidth: 0 }}><b style={{ fontSize: 11 }}>{localized(product, locale) || product.nameKu || product.nameAr}</b><small style={{ display: 'block', ...mutedText }}>{formatIQD(Number(product.priceIqd || 0) * quantities[product.id], locale)}</small></div>
-            <div className="qty-control"><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: Math.max(0, (prev[product.id] || 0) - 1) }))}>−</button><b>{quantities[product.id]}</b><button type="button" onClick={() => setQuantities((prev) => ({ ...prev, [product.id]: (prev[product.id] || 0) + 1 }))}>+</button></div>
-          </div>)}
-        </div>}
-        <div style={{ borderTop: '1px solid var(--border, #e5e7eb)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}><span>{t.total}</span><b>{formatIQD(total, locale)}</b></div>
-        <button type="button" className="button button-primary" style={{ width: '100%', marginTop: 12, justifyContent: 'center' }} disabled={busy || !tableId || selectedItems.length === 0} onClick={() => void submit()}>{busy && <LoaderCircle className="spin" size={15} />}{isKu ? 'ناردنی داواکاری بۆ چێشتخانە' : 'إرسال الطلب إلى المطبخ'}</button>
-      </div>
-      <div style={{ ...panelStyle, background: '#111827', color: '#f8fafc', borderColor: '#273449' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 11, borderBottom: '1px solid #293548' }}>
-          <h3 style={{ margin: 0, fontSize: 13, color: '#fbbf24' }}>🔥 {isKu ? 'داواکارییە چالاکەکان (چێشتخانە)' : 'الطلبات النشطة (المطبخ)'}</h3><span style={{ background: '#273449', color: '#cbd5e1', borderRadius: 7, padding: '3px 7px', fontSize: 10 }}>{activeOrders.length}</span>
-        </div>
-        {activeOrders.length === 0 ? <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 11, padding: 15 }}>{t.noServiceItems}</p> : <div style={{ display: 'grid', gap: 9, paddingTop: 11, maxHeight: 320, overflowY: 'auto' }}>
-          {activeOrders.slice(0, 20).map((order: AnyRecord) => {
-            const table = tables.find((item: AnyRecord) => item.id === order.tableId);
-            const status = normalizeOrderStatus(order.status);
-            return <article key={order.id} style={{ background: '#1f2937', border: '1px solid #374151', borderRadius: 11, padding: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}><b style={{ fontSize: 11 }}>{t.table} {table?.label || '—'}</b><span style={{ fontSize: 10, color: status === 'ready' ? '#6ee7b7' : '#fbbf24' }}>{orderStatusLabel(status, locale, t)}</span></div>
-              <div style={{ display: 'grid', gap: 4, margin: '8px 0', color: '#d1d5db' }}>{combineOrderItems(order.items || []).map((item: AnyRecord, index: number) => <small key={index}>{item.quantity} × {localized(item, locale) || item.nameKu || item.nameAr}</small>)}</div>
-              <select aria-label={t.updateStatus} value={status} disabled={busy} onChange={async (event) => { try { await actions.updateOrderStatus(order.id, event.target.value as OrderStatus); notify(t.saved); } catch (error) { notify(recordActionError(error, t)); } }} style={{ width: '100%', borderRadius: 8, padding: 7, border: '1px solid #475569', background: '#111827', color: '#f8fafc', fontSize: 11 }}>
-                {['new', 'preparing', 'ready', 'delivered'].map((option) => <option key={option} value={option}>{orderStatusLabel(option, locale, t)}</option>)}
-              </select>
-            </article>;
-          })}
-        </div>}
-      </div>
-    </section>
-  </div>;
-}
 function OrdersPage({ data, locale, t, actions, notify }: { data: AnyRecord; locale: Locale; t: any; actions: AnyRecord; notify: (message: string) => void }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');

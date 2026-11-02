@@ -56,7 +56,7 @@ function combineOrderItems(items: AnyRecord[] = []): AnyRecord[] {
 const copy = {
   ku: {
     brand: 'QUBA', language: 'زمان', subbrand: 'کافێ و چێشتخانە',
-    dashboard: 'پوختەی ڕۆژ', orders: 'داواکارییەکان', archive: 'ئەرشیفی داواکاری', customers: 'کڕیارەکان', employees: 'کارمەندان', admins: 'بەڕێوەبەرەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
+    dashboard: 'پوختەی ڕۆژ', orders: 'داواکارییەکان', archive: 'ئەرشیفی داواکاری', archiveRemove: 'لابردن لە ئەرشیف', archiveConfirm: 'ئەم داواکارییە تەنها لە ئەرشیف دەشاردرێتەوە و لە ڕاپۆرتەکاندا دەمێنێتەوە. دڵنیایت؟', customers: 'کڕیارەکان', employees: 'کارمەندان', admins: 'بەڕێوەبەرەکان', expenses: 'خەرجییەکان', reports: 'ڕاپۆرتەکان', products: 'خواردنەکانی مێنیو', categories: 'جۆرەکان', tables: 'مێزەکان', service: 'بەشی خواردن و خواردنەوە',
     settings: 'ڕێکخستنی چێشتخانە', signOut: 'چوونەدەرەوە', owner: 'بەڕێوەبەری قوبە',
     today: 'ئەمڕۆ', revenue: 'داهاتی ئەمڕۆ', openOrders: 'داواکارییە چالاکەکان',
     tablesOccupied: 'مێزی بەکارهاتوو', costs: 'خەرجیی ئەمڕۆ', todayFlow: 'ڕەوتی ئەمڕۆ',
@@ -100,7 +100,7 @@ const copy = {
   },
   ar: {
     brand: 'QUBA', language: 'اللغة', subbrand: 'مقهى ومطعم',
-    dashboard: 'ملخص اليوم', orders: 'الطلبات', archive: 'أرشيف الطلبات', customers: 'الزبائن', employees: 'الموظفون', admins: 'المديرون', expenses: 'المصروفات', reports: 'التقارير', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
+    dashboard: 'ملخص اليوم', orders: 'الطلبات', archive: 'أرشيف الطلبات', archiveRemove: 'إخفاء من الأرشيف', archiveConfirm: 'سيتم إخفاء هذا الطلب من الأرشيف فقط، وسيبقى محفوظاً في التقارير. هل أنت متأكد؟', customers: 'الزبائن', employees: 'الموظفون', admins: 'المديرون', expenses: 'المصروفات', reports: 'التقارير', products: 'عناصر القائمة', categories: 'الفئات', tables: 'الطاولات', service: 'قسم الطعام والمشروبات',
     settings: 'إعدادات المطعم', signOut: 'تسجيل الخروج', owner: 'إدارة قوبا',
     today: 'اليوم', revenue: 'إيراد اليوم', openOrders: 'الطلبات النشطة',
     tablesOccupied: 'الطاولات المشغولة', costs: 'مصروفات اليوم', todayFlow: 'حركة اليوم',

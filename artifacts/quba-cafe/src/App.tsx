@@ -585,7 +585,7 @@ function AuthenticatedApp({ locale, setLocale, onSignOut, t }: { locale: Locale;
         <p className="nav-caption">{locale === 'ku' ? 'بەڕێوەبردن' : 'الإدارة'}</p>
         <nav className="main-nav">
           {navItems.map(({ path: itemPath, key, icon: Icon }) => <Link key={itemPath} href={itemPath} className={`nav-link ${path === itemPath ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
-            <Icon size={18} strokeWidth={1.8} /><span>{t[key]}</span>{key === 'orders' && snap.orders.filter((o: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(o.status))).length > 0 && <i className="nav-badge" />}
+            <Icon size={18} strokeWidth={1.8} /><span>{t[key]}</span>
           </Link>)}
         </nav>
         <div className="sidebar-bottom">

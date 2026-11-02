@@ -858,7 +858,9 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
   const allTables = [...data.tables];
   const selectedTable = allTables.find((table: AnyRecord) => table.id === selectedTableId) || null;
   const tables = allTables.filter((table: AnyRecord) => table.active !== false).sort((a: AnyRecord, b: AnyRecord) => Number(String(a.label || '').match(/\d+/)?.[0] || 999) - Number(String(b.label || '').match(/\d+/)?.[0] || 999));
-  const tableOrders = selectedTable ? data.orders.filter((order: AnyRecord) => order.tableId === selectedTable.id && normalizeOrderStatus(order.status) !== 'cancelled').sort((a: AnyRecord, b: AnyRecord) => asDate(b.createdAt).getTime() - asDate(a.createdAt).getTime()) : [];
+  // Only show orders that still belong to the table's open bill.
+  // Paid orders remain in the database and reports, but are cleared from the table view.
+  const tableOrders = selectedTable ? data.orders.filter((order: AnyRecord) => order.tableId === selectedTable.id && !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status))).sort((a: AnyRecord, b: AnyRecord) => asDate(b.createdAt).getTime() - asDate(a.createdAt).getTime()) : [];
   const activeOrders = tableOrders.filter((order: AnyRecord) => !['paid', 'cancelled'].includes(normalizeOrderStatus(order.status)));
   const currentTotal = activeOrders.reduce((sum: number, order: AnyRecord) => sum + Number(order.totalIqd || 0), 0);
   const currentPaid = activeOrders.reduce((sum: number, order: AnyRecord) => sum + (order.payments || []).reduce((paid: number, payment: AnyRecord) => paid + Number(payment.amountIqd || 0), 0), 0);
@@ -870,8 +872,14 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     if (!paymentOrder || busy) return;
     setBusy(true);
     try {
+      const orderDue = Math.max(0, Number(paymentOrder.totalIqd || 0) - (paymentOrder.payments || []).reduce((sum: number, payment: AnyRecord) => sum + Number(payment.amountIqd || 0), 0));
       await actions.addPayment(paymentOrder.id, { amountIqd: amount, method });
       setPaymentOrder(null);
+      // When this payment settles the final open order, clear the table screen
+      // so the table is immediately ready for the next customer.
+      const thisOrderWillBePaid = amount >= orderDue;
+      const noOtherOpenOrders = activeOrders.every((order: AnyRecord) => order.id === paymentOrder.id);
+      if (thisOrderWillBePaid && noOtherOpenOrders) setSelectedTableId(null);
       notify(t.saved);
     } catch (error) { notify(recordActionError(error, t)); }
     finally { setBusy(false); }

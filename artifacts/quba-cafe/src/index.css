@@ -1289,3 +1289,79 @@ input,select,textarea,.form-field input,.form-field select,.form-field textarea,
   .quba-luxury-tables .quba-table-open .table-tile-number{font-size:34px!important}
   .quba-luxury-tables .quba-table-filters button{padding:6px 3px;font-size:11px!important}
 }
+
+
+/* QUBA new-order dialog: clearer table number and wider item quantity controls */
+.dialog-form .form-field select:disabled{
+  min-height:58px;
+  font-size:23px;
+  font-weight:800;
+  text-align:center;
+  padding:12px 16px;
+}
+.product-picker{
+  width:100%;
+  max-height:280px;
+}
+.picker-product{
+  width:100%;
+  min-height:76px;
+  padding:13px 15px;
+  gap:14px;
+}
+.picker-product>div:first-child{
+  flex:1;
+  min-width:0;
+  align-items:flex-start;
+}
+.picker-product b{
+  font-size:15px!important;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.picker-product small{
+  font-size:11px;
+}
+.qty-control{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  min-width:142px;
+  padding:5px 8px;
+  border:1px solid hsl(var(--border));
+  border-radius:13px;
+  background:hsl(var(--muted)/.35);
+}
+.qty-control button{
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
+  border:1px solid hsl(var(--border));
+  border-radius:10px;
+  background:hsl(var(--card));
+  color:hsl(var(--primary));
+  font-size:23px;
+  font-weight:700;
+  line-height:1;
+  cursor:pointer;
+}
+.qty-control span{
+  min-width:27px;
+  text-align:center;
+  font-size:17px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:680px){
+  .dialog-form .form-field select:disabled{min-height:62px;font-size:25px}
+  .product-picker{max-height:290px}
+  .picker-product{min-height:82px;padding:12px 11px;gap:9px}
+  .picker-product b{font-size:15px!important}
+  .qty-control{min-width:132px;gap:7px;padding:4px 6px}
+  .qty-control button{width:36px;height:36px;flex-basis:36px}
+  .qty-control span{min-width:24px;font-size:17px}
+}

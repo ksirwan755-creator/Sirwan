@@ -149,13 +149,9 @@ const navItems = [
   { path: '/reports', key: 'reports', icon: LayoutDashboard },
   { path: '/archive', key: 'archive', icon: Archive },
   { path: '/menu', key: 'products', icon: Coffee },
-  { path: '/categories', key: 'categories', icon: Boxes },
   { path: '/service', key: 'service', icon: Coffee },
-  { path: '/customers', key: 'customers', icon: Users },
   { path: '/employees', key: 'employees', icon: Users },
   { path: '/admins', key: 'admins', icon: BriefcaseBusiness },
-  { path: '/expenses', key: 'expenses', icon: Wallet },
-  { path: '/settings', key: 'settings', icon: Settings2 },
 ] as const;
 
 function formatIQD(value: number | undefined, locale: Locale) {

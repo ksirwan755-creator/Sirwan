@@ -1365,3 +1365,49 @@ input,select,textarea,.form-field input,.form-field select,.form-field textarea,
   .qty-control button{width:36px;height:36px;flex-basis:36px}
   .qty-control span{min-width:24px;font-size:17px}
 }
+
+
+/* QUBA: make order item names and prices easy to read on phones */
+.picker-product b,
+.product-picker .picker-product b {
+  font-size:19px !important;
+  line-height:1.65 !important;
+  font-weight:800 !important;
+}
+.picker-product small,
+.product-picker .picker-product small {
+  display:block;
+  margin-top:4px;
+  font-size:17px !important;
+  line-height:1.5 !important;
+  font-weight:700 !important;
+}
+.order-lines > div {
+  font-size:18px !important;
+  line-height:1.8 !important;
+  padding-block:7px !important;
+}
+.order-lines > div span { font-size:18px !important; }
+.order-lines > div span small {
+  font-size:16px !important;
+  font-weight:700 !important;
+}
+.order-lines > div b {
+  font-size:18px !important;
+  font-weight:800 !important;
+}
+.service-order-row { font-size:18px !important; }
+.service-item-name b { font-size:19px !important; line-height:1.6 !important; }
+.service-item-name small { font-size:15px !important; }
+.service-order-row > strong { font-size:21px !important; }
+.employee-order-items { font-size:18px !important; }
+.employee-order-items > div { padding-block:7px !important; }
+.employee-order-items b { font-size:18px !important; }
+@media(max-width:680px) {
+  .picker-product b, .product-picker .picker-product b { font-size:18px !important; }
+  .picker-product small, .product-picker .picker-product small { font-size:16px !important; }
+  .order-lines > div, .order-lines > div span, .order-lines > div b { font-size:17px !important; }
+  .order-lines > div span small { font-size:15px !important; }
+  .service-item-name b { font-size:18px !important; }
+  .service-order-row > strong { font-size:20px !important; }
+}

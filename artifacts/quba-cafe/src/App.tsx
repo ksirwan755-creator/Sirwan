@@ -1022,7 +1022,7 @@ function TablesPage({ data, locale, t, actions, notify }: { data: AnyRecord; loc
     {item.isActive && item.due > 0 && <button type="button" className="quba-table-pay" onClick={() => setPaymentOrder(item.order)} disabled={busy}><Banknote size={15} />{locale === 'ku' ? 'وەرگرتنی پارە' : 'استلام دفعة'}</button>}
   </article>;
   if (preparing && tableCards.length === 0) return <div className="tables-loading">{t.tableAutoCreate}</div>;
-  return <section className="quba-tables-only">
+  return <section className="quba-tables-only quba-luxury-tables">
     <div className="quba-tables-section">
       <header className="quba-tables-heading">
         <div><h2>{locale === 'ku' ? 'مێزەکانی قوبا' : 'طاولات قوبا'}</h2><p>{locale === 'ku' ? 'مێزە بەکارهاتوو و بەتاڵەکان لە یەک شاشەدا.' : 'الطاولات المشغولة والمتاحة في شاشة واحدة.'}</p></div>

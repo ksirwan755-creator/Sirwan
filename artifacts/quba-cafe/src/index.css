@@ -1170,3 +1170,122 @@ input,select,textarea,.form-field input,.form-field select,.form-field textarea,
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
+
+
+/* QUBA TABLES — luxury marble and emerald mobile design inspired by the approved reference */
+.quba-luxury-tables{
+  min-height:calc(100vh - 76px);
+  padding:clamp(12px,2.5vw,28px);
+  border-radius:24px;
+  color:#203c31;
+  background:
+    radial-gradient(ellipse at 12% 18%,rgba(255,255,255,.94),transparent 38%),
+    radial-gradient(ellipse at 88% 76%,rgba(220,207,184,.22),transparent 42%),
+    linear-gradient(135deg,#f8f5ed 0%,#fffdf8 48%,#f0ece2 100%);
+  border:1px solid rgba(188,166,124,.42);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 35px rgba(35,54,42,.07);
+}
+.quba-luxury-tables .quba-tables-section{
+  padding:clamp(12px,2vw,24px);
+  border:0;
+  border-radius:20px;
+  background:transparent;
+  box-shadow:none;
+}
+.quba-luxury-tables .quba-tables-heading{
+  display:flex;flex-direction:column;align-items:stretch;gap:13px;margin-bottom:18px;
+}
+.quba-luxury-tables .quba-tables-heading h2{
+  color:#183f32!important;font-size:clamp(23px,3vw,30px)!important;font-weight:850;
+}
+.quba-luxury-tables .quba-tables-heading p{color:#6f756d;font-size:14px;line-height:1.8}
+.quba-luxury-tables .quba-main-actions{justify-content:space-between;gap:12px}
+.quba-luxury-tables .quba-main-actions>span{
+  min-height:44px;padding:0 16px;border:1px solid #d9caa7;border-radius:15px;
+  background:linear-gradient(145deg,#fffdf7,#eee8d9);color:#294b3c;font-size:15px;
+  box-shadow:0 3px 8px rgba(47,54,39,.08)
+}
+.quba-luxury-tables .quba-main-actions .button{
+  min-height:48px;border:1px solid #d7bd7c;border-radius:13px;
+  background:linear-gradient(145deg,#376d56,#194735)!important;color:#fff9e9!important;
+  box-shadow:0 5px 0 #b79b62,0 9px 17px rgba(26,67,49,.2);
+}
+.quba-luxury-tables .quba-table-toolbar{display:flex;flex-direction:column;gap:13px;margin:18px 0 22px}
+.quba-luxury-tables .quba-table-search{
+  min-height:54px;max-width:none;width:100%;padding:0 16px;border:1px solid #d8d0c0;
+  border-radius:17px;background:rgba(255,255,255,.74);box-shadow:inset 0 2px 6px rgba(55,48,35,.04)
+}
+.quba-luxury-tables .quba-table-search input{height:50px;background:transparent;border:0;box-shadow:none}
+.quba-luxury-tables .quba-table-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;width:100%}
+.quba-luxury-tables .quba-table-filters button{
+  min-height:48px;justify-content:center;gap:7px;padding:7px 8px;border:1px solid #d8cfbd;
+  border-radius:14px;background:linear-gradient(145deg,#fffdf8,#eeeadd);color:#344b3e;
+  box-shadow:0 3px 8px rgba(45,50,39,.06)
+}
+.quba-luxury-tables .quba-table-filters button b{
+  display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:50%;
+  background:#e3e1d6;color:#425347
+}
+.quba-luxury-tables .quba-table-filters button.is-selected{
+  border:1px solid #c5a968;background:linear-gradient(145deg,#3b715a,#174735);
+  color:#fff8e7;box-shadow:0 4px 0 #b79b62,0 7px 14px rgba(27,67,49,.18)
+}
+.quba-luxury-tables .quba-table-filters button.is-selected b{background:rgba(255,255,255,.18);color:#fff}
+.quba-luxury-tables .quba-tables-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:stretch
+}
+.quba-luxury-tables .quba-table-card{
+  min-width:0;padding:7px;border:1px solid #c9b47d!important;border-radius:25px;
+  background:linear-gradient(145deg,#477b64 0%,#285b47 48%,#174333 100%)!important;
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.3),0 7px 0 #b59b64,0 13px 22px rgba(31,62,45,.19);
+  overflow:hidden;transition:transform .18s,box-shadow .18s
+}
+.quba-luxury-tables .quba-table-card:active{transform:translateY(2px);box-shadow:inset 0 2px 3px rgba(255,255,255,.2),0 4px 0 #b59b64,0 8px 15px rgba(31,62,45,.16)}
+.quba-luxury-tables .quba-table-card.table-tile-busy{
+  border-color:#c9a45e!important;background:linear-gradient(145deg,#745b38,#4c3927)!important
+}
+.quba-luxury-tables .quba-table-open{
+  min-height:208px;gap:11px;padding:15px 8px;border-radius:19px;color:#fff8e9
+}
+.quba-luxury-tables .quba-table-open:hover{background:rgba(255,255,255,.07)}
+.quba-luxury-tables .quba-table-open .table-tile-number{
+  color:#f2d99b;font-family:Georgia,serif;font-size:clamp(35px,6vw,48px)!important;
+  font-weight:500;text-shadow:0 2px 3px rgba(0,0,0,.35)
+}
+.quba-luxury-tables .quba-table-state{
+  padding:5px 14px;border:1px solid rgba(8,35,25,.5);border-radius:30px;
+  background:rgba(7,39,27,.25);color:#fff8e9;font-size:13px!important
+}
+.quba-luxury-tables .quba-table-open>small{color:rgba(255,249,231,.78);font-size:12px!important}
+.quba-luxury-tables .quba-table-open .table-tile-balance{color:#f5dfa7;font-size:14px!important}
+.quba-luxury-tables .quba-table-open .table-tile-action{
+  display:flex;align-items:center;gap:5px;margin-top:3px;color:#fff4d9!important;font-size:13px!important
+}
+.quba-luxury-tables .quba-table-pay{
+  min-height:39px;border:1px solid rgba(244,220,164,.6);border-radius:12px;
+  background:rgba(255,248,225,.13);color:#fff5dc
+}
+.quba-luxury-tables .quba-empty-tables{padding:24px;text-align:center;color:#64766b}
+@media(max-width:640px){
+  .quba-luxury-tables{min-height:calc(100vh - 64px);padding:8px;border-radius:0;border-inline:0}
+  .quba-luxury-tables .quba-tables-section{padding:12px 9px}
+  .quba-luxury-tables .quba-tables-heading{gap:10px}
+  .quba-luxury-tables .quba-tables-heading h2{font-size:23px!important}
+  .quba-luxury-tables .quba-tables-heading p{font-size:13px}
+  .quba-luxury-tables .quba-main-actions{gap:9px}
+  .quba-luxury-tables .quba-main-actions .button{flex:1;min-width:0;padding:8px 10px;font-size:12px!important}
+  .quba-luxury-tables .quba-table-toolbar{gap:11px;margin:15px 0 19px}
+  .quba-luxury-tables .quba-table-filters{gap:7px}
+  .quba-luxury-tables .quba-table-filters button{min-height:45px;font-size:12px!important}
+  .quba-luxury-tables .quba-tables-grid{gap:13px}
+  .quba-luxury-tables .quba-table-card{padding:5px;border-radius:22px}
+  .quba-luxury-tables .quba-table-open{min-height:180px;padding:11px 5px;gap:9px}
+  .quba-luxury-tables .quba-table-open .table-tile-number{font-size:39px!important}
+  .quba-luxury-tables .quba-table-open>small{font-size:11px!important}
+  .quba-luxury-tables .quba-table-open .table-tile-action{font-size:12px!important}
+}
+@media(max-width:360px){
+  .quba-luxury-tables .quba-table-open{min-height:164px}
+  .quba-luxury-tables .quba-table-open .table-tile-number{font-size:34px!important}
+  .quba-luxury-tables .quba-table-filters button{padding:6px 3px;font-size:11px!important}
+}
